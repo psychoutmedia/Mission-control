@@ -108,6 +108,55 @@ function filterTerminalOutput(text) {
 let activePipelines = [];
 let pipelineIdCounter = 0;
 
+// ─── Per-agent model selection ──────────────────────────────────────────
+const OPENCLAW_CONFIG = path.join(process.env.HOME, '.openclaw/openclaw.json');
+
+// In-memory model tracking: null = using global default
+const agentModels = { main: null, guido: null, newton: null, bronte: null };
+let availableModels = [];
+let defaultModel = '';
+
+function loadAvailableModels() {
+    try {
+        const config = JSON.parse(fs.readFileSync(OPENCLAW_CONFIG, 'utf8'));
+        const defaults = config?.agents?.defaults || {};
+
+        // Extract default model
+        defaultModel = defaults?.model?.primary || '';
+
+        // Extract available models from models config
+        const modelsConfig = defaults?.models || {};
+        availableModels = Object.keys(modelsConfig).map(id => ({
+            id,
+            name: friendlyModelName(id)
+        }));
+
+        // Ensure default model is in the list
+        if (defaultModel && !availableModels.find(m => m.id === defaultModel)) {
+            availableModels.unshift({ id: defaultModel, name: friendlyModelName(defaultModel) });
+        }
+
+        // Read per-agent overrides from agents.list[]
+        const agentsList = config?.agents?.list || [];
+        for (const agentConf of agentsList) {
+            if (agentConf.id && agentConf.model && agentModels.hasOwnProperty(agentConf.id)) {
+                agentModels[agentConf.id] = agentConf.model;
+            }
+        }
+
+        console.log(`[MODELS] Loaded ${availableModels.length} models, default: ${friendlyModelName(defaultModel)}`);
+        console.log(`[MODELS] Per-agent overrides:`, Object.fromEntries(
+            Object.entries(agentModels).filter(([, v]) => v !== null).map(([k, v]) => [k, friendlyModelName(v)])
+        ));
+    } catch (e) {
+        console.log(`[MODELS] Could not load openclaw config: ${e.message}`);
+    }
+}
+
+function getAgentCurrentModel(agentId) {
+    return agentModels[agentId] || defaultModel;
+}
+
 // Track session state per agent: { sessionId, fresh, taskCount }
 const agentSessionState = {
     main: { sessionId: null, fresh: true, taskCount: 0 },
@@ -580,7 +629,8 @@ function getFullAgentStatus() {
             sessionState: agentSessionState[agentDef.id] || { fresh: true, taskCount: 0 },
             performance: getAgentPerformance(agentDef.id),
             queueLength: (agentQueues[agentDef.id] || []).length,
-            queueRunning: agentQueueRunning[agentDef.id] || false
+            queueRunning: agentQueueRunning[agentDef.id] || false,
+            currentModel: friendlyModelName(getAgentCurrentModel(agentDef.id))
         });
     }
 
@@ -647,6 +697,11 @@ async function runAgentTask(agentId, task, { freshSession = false, timeoutMs = 3
             agentSessionState[agentId].sessionId = sessionId || agentSessionState[agentId].sessionId;
             agentSessionState[agentId].fresh = freshSession;
             agentSessionState[agentId].taskCount++;
+        }
+
+        // Remind the agent where to save files (agents default to cwd but may not know their workspace path)
+        if (agentId !== 'main' && !/save.*to|output.*to|write.*to/i.test(task)) {
+            task += `\n\nIMPORTANT: Save any output files to your workspace directory: ${workspace}`;
         }
 
         console.log(`[SPAWN] openclaw agent --agent ${agentId} --message "${task.substring(0, 60)}..."`);
@@ -784,6 +839,32 @@ for (const agent of AGENTS) {
     } catch (e) {
         console.log(`[WATCH] Could not watch ${agent.name} workspace`);
     }
+}
+
+// ─── Structured output summarisation for pipeline handoffs ──────────
+
+async function summariseOutput(agentId, rawOutput) {
+    if (!rawOutput || rawOutput.trim().length === 0) return '';
+
+    const summaryPrompt = `Summarise your key findings from the work you just completed in under 500 words. Focus on the most important facts, conclusions, and actionable details that the next person in the chain needs to know. Be concise and structured — use bullet points.`;
+
+    console.log(`[SUMMARISE] Asking ${agentId} to summarise ${rawOutput.length} chars of output...`);
+
+    try {
+        const result = await runAgentTask(agentId, summaryPrompt, { freshSession: false, timeoutMs: 60000 });
+        const summary = (result.stdout || '').trim();
+
+        if (result.code === 0 && summary.length > 0) {
+            console.log(`[SUMMARISE] ${agentId}: got ${summary.length} char summary (from ${rawOutput.length} chars raw)`);
+            return summary;
+        }
+    } catch (e) {
+        console.log(`[SUMMARISE] ${agentId}: summarisation failed: ${e.message}`);
+    }
+
+    // Fallback: truncated raw output
+    console.log(`[SUMMARISE] ${agentId}: falling back to truncated raw output (3000 chars)`);
+    return rawOutput.substring(0, 3000);
 }
 
 // ─── HTTP Server ───────────────────────────────────────────────────────
@@ -985,6 +1066,81 @@ const server = http.createServer(async (req, res) => {
         telegramEnabled = wasEnabled;
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, message: 'Test notification sent' }));
+        return;
+    }
+
+    // ─── Model selection ──────────────────────────────────────────────
+    if (req.url === '/models' && req.method === 'GET') {
+        // Reload config to pick up any external changes
+        loadAvailableModels();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+            models: availableModels,
+            default: defaultModel,
+            defaultName: friendlyModelName(defaultModel),
+            agentModels: Object.fromEntries(
+                Object.entries(agentModels).map(([k, v]) => [k, v])
+            )
+        }));
+        return;
+    }
+
+    if (req.url === '/models/set' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', () => {
+            try {
+                const { agentId, modelId } = JSON.parse(body);
+                const agent = AGENTS.find(a => a.id === agentId);
+                if (!agent) {
+                    res.writeHead(400);
+                    res.end(JSON.stringify({ error: 'Unknown agent' }));
+                    return;
+                }
+                if (!modelId) {
+                    res.writeHead(400);
+                    res.end(JSON.stringify({ error: 'No model specified' }));
+                    return;
+                }
+
+                console.log(`[MODELS] Setting ${agent.name} model to ${modelId}`);
+
+                // Use openclaw CLI to persist the model change
+                const proc = spawn('openclaw', ['models', '--agent', agentId, 'set', modelId], {
+                    cwd: process.env.HOME
+                });
+                let stdout = '';
+                let stderr = '';
+                proc.stdout.on('data', d => stdout += d.toString());
+                proc.stderr.on('data', d => stderr += d.toString());
+                proc.on('close', (code) => {
+                    if (code === 0) {
+                        agentModels[agentId] = modelId;
+                        console.log(`[MODELS] ${agent.name} model set to ${friendlyModelName(modelId)}`);
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({
+                            success: true,
+                            model: friendlyModelName(modelId),
+                            modelId: modelId
+                        }));
+                    } else {
+                        console.log(`[MODELS] Failed to set model: ${stderr}`);
+                        res.writeHead(500, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({
+                            error: `Failed to set model: ${stderr.substring(0, 200)}`
+                        }));
+                    }
+                });
+
+                // Timeout
+                setTimeout(() => {
+                    proc.kill();
+                }, 10000);
+            } catch (e) {
+                res.writeHead(400);
+                res.end(JSON.stringify({ error: e.message }));
+            }
+        });
         return;
     }
 
@@ -1261,7 +1417,8 @@ const server = http.createServer(async (req, res) => {
                         ...s,
                         index: i,
                         status: 'pending',
-                        output: null
+                        output: null,
+                        summary: null
                     })),
                     status: 'running',
                     startedAt: new Date().toISOString(),
@@ -1295,7 +1452,7 @@ const server = http.createServer(async (req, res) => {
                         task = task.replace(/\{\{input\}\}/g, previousOutput);
                         // If no {{input}} placeholder, append context
                         if (!step.taskTemplate?.includes('{{input}}') && !step.task?.includes('{{input}}')) {
-                            task += `\n\nContext from previous step:\n${previousOutput.substring(0, 3000)}`;
+                            task += `\n\nContext from previous step:\n${previousOutput}`;
                         }
                         console.log(`[PIPELINE] Injected context. Final task length: ${task.length} chars`);
                     } else {
@@ -1369,6 +1526,24 @@ const server = http.createServer(async (req, res) => {
                         break;
                     }
 
+                    // Summarise output for handoff to next step (non-final steps only)
+                    if (i < pipeline.steps.length - 1) {
+                        step.status = 'summarising';
+                        console.log(`[PIPELINE] Summarising step ${i + 1} output for handoff...`);
+                        const summary = await summariseOutput(step.agentId, previousOutput);
+                        step.summary = summary;
+                        step.status = 'completed';
+                        previousOutput = summary;
+                        console.log(`[PIPELINE] Step ${i + 1} summary ready (${summary.length} chars)`);
+
+                        // Update the result entry with summary data
+                        const existingResult = completedResults.find(r => r.id === cliResultId);
+                        if (existingResult) {
+                            existingResult.summary = summary.substring(0, 3000);
+                            existingResult.hasFullOutput = true;
+                        }
+                    }
+
                     console.log(`[PIPELINE] Step ${i + 1} complete. Checking for next step...`);
                 }
 
@@ -1386,7 +1561,7 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // ─── Command bar endpoint — Astra decomposes a goal ─────────────────
+    // ─── Command bar endpoint — Astra decomposes a goal (returns plan for approval) ───
     if (req.url === '/agents/command' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => { body += chunk.toString(); });
@@ -1407,10 +1582,6 @@ const server = http.createServer(async (req, res) => {
                     timestamp: new Date().toISOString()
                 };
 
-                // Respond immediately
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: true, message: 'Astra is decomposing your goal...' }));
-
                 // Ask Astra to decompose the goal into subtasks
                 const decompositionPrompt = `You are Astra, the CEO and Project Manager of Automa Dynamics. You have three agents:
 - Newton (researcher): fact-finding, synthesis, investigation, web research
@@ -1428,7 +1599,26 @@ Rules:
 - If tasks should run in sequence (output of one feeds into the next), include "dependsOn" with the index of the dependency: {"agent":"bronte","task":"Write...","dependsOn":0}
 - Keep it practical — don't over-decompose`;
 
-                const astraResult = await runAgentTask('main', decompositionPrompt);
+                // Try Astra decomposition with a 60s timeout. If it fails/times out,
+                // fall back to heuristic immediately so the user always gets a plan.
+                let plan = null;
+                try {
+                    const astraResult = await runAgentTask('main', decompositionPrompt, { timeoutMs: 60000 });
+                    console.log(`[COMMAND] Astra returned ${(astraResult.stdout || '').length} chars, code=${astraResult.code}`);
+
+                    const output = astraResult.stdout || '';
+                    const jsonMatch = output.match(/\{[\s\S]*"tasks"[\s\S]*\}/);
+                    if (jsonMatch) {
+                        try {
+                            plan = JSON.parse(jsonMatch[0]);
+                            console.log(`[COMMAND] Parsed ${plan.tasks?.length || 0} tasks from Astra's response`);
+                        } catch (e) {
+                            console.log('[COMMAND] Could not parse Astra response as JSON:', e.message);
+                        }
+                    }
+                } catch (e) {
+                    console.log('[COMMAND] Astra decomposition threw:', e.message);
+                }
 
                 agentStates.main = {
                     status: 'active',
@@ -1437,22 +1627,8 @@ Rules:
                     timestamp: new Date().toISOString()
                 };
 
-                // Parse Astra's response
-                let plan = null;
-                const output = astraResult.stdout || '';
-                // Try to extract JSON from the output
-                const jsonMatch = output.match(/\{[\s\S]*"tasks"[\s\S]*\}/);
-                if (jsonMatch) {
-                    try {
-                        plan = JSON.parse(jsonMatch[0]);
-                    } catch (e) {
-                        console.log('[COMMAND] Could not parse Astra response as JSON');
-                    }
-                }
-
                 if (!plan || !plan.tasks || !Array.isArray(plan.tasks)) {
-                    // Fallback: simple heuristic dispatch with sequential chaining
-                    console.log('[COMMAND] Astra decomposition failed, using heuristic');
+                    console.log('[COMMAND] Astra decomposition failed or timed out, using heuristic');
                     plan = { tasks: [] };
                     const goalLower = goal.toLowerCase();
                     if (goalLower.includes('research') || goalLower.includes('find') || goalLower.includes('investigate') || goalLower.includes('search') || goalLower.includes('learn about')) {
@@ -1466,40 +1642,93 @@ Rules:
                         const idx = plan.tasks.length;
                         plan.tasks.push({ agent: 'guido', task: `Build a working implementation for: ${goal}`, ...(idx > 0 ? { dependsOn: idx - 1 } : {}) });
                     }
-                    // Default: if nothing matched, send to Newton for research
                     if (plan.tasks.length === 0) {
                         plan.tasks.push({ agent: 'newton', task: goal });
                     }
                 }
 
-                console.log(`[COMMAND] Goal: "${goal.substring(0, 60)}" → ${plan.tasks.length} tasks`);
-
-                // If multiple tasks and no explicit dependencies, default to sequential pipeline
-                // This ensures output from one agent feeds into the next
+                // Auto-chain if no explicit dependencies
                 if (plan.tasks.length > 1) {
                     let anyDeps = plan.tasks.some(t => t.dependsOn !== undefined);
                     if (!anyDeps) {
-                        // Auto-chain: each task depends on the previous one
                         for (let i = 1; i < plan.tasks.length; i++) {
                             plan.tasks[i].dependsOn = i - 1;
                         }
-                        console.log('[COMMAND] Auto-chained tasks into sequential pipeline');
                     }
                 }
 
-                // Check if tasks have dependencies (should run as pipeline)
+                // Determine strategy
+                const hasDependencies = plan.tasks.some(t => t.dependsOn !== undefined);
+                const strategy = hasDependencies ? 'sequential' : 'parallel';
+
+                // Return decomposition plan for user approval
+                const planId = `plan-${crypto.randomUUID()}`;
+                console.log(`[COMMAND] Goal: "${goal.substring(0, 60)}" → ${plan.tasks.length} tasks (${strategy}), awaiting approval`);
+
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                    success: true,
+                    plan: {
+                        id: planId,
+                        goal,
+                        tasks: plan.tasks,
+                        strategy
+                    }
+                }));
+
+            } catch (e) {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: e.message }));
+            }
+        });
+        return;
+    }
+
+    // ─── Command approve endpoint — dispatches a user-approved plan ───────
+    if (req.url === '/agents/command/approve' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', async () => {
+            try {
+                const { plan } = JSON.parse(body);
+                if (!plan || !plan.tasks || !Array.isArray(plan.tasks) || plan.tasks.length === 0) {
+                    res.writeHead(400);
+                    res.end(JSON.stringify({ error: 'Invalid plan' }));
+                    return;
+                }
+
+                const goal = plan.goal || 'Command';
                 const hasDependencies = plan.tasks.some(t => t.dependsOn !== undefined);
 
+                // Clear Astra's terminal and show the approved plan
+                const agentNames = { newton: 'Newton', guido: 'Guido', bronte: 'Bronte', main: 'Astra' };
+                let planSummary = `── Approved Plan: ${goal} ──\n`;
+                plan.tasks.forEach((t, i) => {
+                    planSummary += `\n${i + 1}. ${agentNames[t.agent] || t.agent}:\n   ${t.task}\n`;
+                });
+                planSummary += `\n── Dispatching ${plan.tasks.length} task${plan.tasks.length > 1 ? 's' : ''} (${hasDependencies ? 'sequential' : 'parallel'}) ──\n`;
+                agentTerminalOutput.main = planSummary;
+
+                agentStates.main = {
+                    status: 'active',
+                    action: `Dispatching: ${goal.substring(0, 50)}`,
+                    task: goal,
+                    timestamp: new Date().toISOString()
+                };
+
+                // Respond immediately
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true, message: 'Plan approved, dispatching...' }));
+
                 if (hasDependencies) {
-                    // Build a pipeline from dependent tasks
                     // Sort by dependency order
                     const ordered = [];
                     const remaining = [...plan.tasks];
                     const resolved = new Set();
 
                     while (remaining.length > 0) {
-                        const next = remaining.findIndex(t => t.dependsOn === undefined || resolved.has(t.dependsOn));
-                        if (next === -1) break; // circular dep guard
+                        const next = remaining.findIndex(t => t.dependsOn === undefined || t.dependsOn === null || resolved.has(t.dependsOn));
+                        if (next === -1) break;
                         const task = remaining.splice(next, 1)[0];
                         resolved.add(ordered.length);
                         ordered.push(task);
@@ -1515,7 +1744,8 @@ Rules:
                             task: s.task,
                             index: i,
                             status: 'pending',
-                            output: null
+                            output: null,
+                            summary: null
                         })),
                         status: 'running',
                         startedAt: new Date().toISOString(),
@@ -1523,7 +1753,7 @@ Rules:
                     };
                     activePipelines.unshift(pipeline);
 
-                    // Run pipeline in background
+                    // Run pipeline in background with summarisation between steps
                     (async () => {
                         let previousOutput = '';
                         for (let i = 0; i < pipeline.steps.length; i++) {
@@ -1534,7 +1764,7 @@ Rules:
 
                             let task = step.task;
                             if (previousOutput) {
-                                task += `\n\nContext from previous step:\n${previousOutput.substring(0, 3000)}`;
+                                task += `\n\nContext from previous step:\n${previousOutput}`;
                             }
                             step.task = task;
 
@@ -1550,7 +1780,6 @@ Rules:
                             step.output = output.substring(0, 5000);
                             step.status = result.code === 0 ? 'completed' : 'error';
                             step.endedAt = new Date().toISOString();
-                            previousOutput = output;
 
                             agentStates[step.agentId] = {
                                 status: 'idle',
@@ -1560,8 +1789,9 @@ Rules:
                                 timestamp: new Date().toISOString()
                             };
 
+                            const cmdResultId = `cmd-${pipelineId}-${i}-${Date.now()}`;
                             completedResults.unshift({
-                                id: `cmd-${pipelineId}-${i}-${Date.now()}`,
+                                id: cmdResultId,
                                 agent: step.agentId,
                                 agentName: agent?.name || step.agentId,
                                 task: step.taskTemplate || task,
@@ -1579,6 +1809,22 @@ Rules:
                             if (step.status === 'error') {
                                 pipeline.status = 'error';
                                 break;
+                            }
+
+                            // Summarise output for next step (non-final steps only)
+                            if (i < pipeline.steps.length - 1) {
+                                step.status = 'summarising';
+                                const summary = await summariseOutput(step.agentId, output);
+                                step.summary = summary;
+                                step.status = 'completed';
+                                previousOutput = summary;
+
+                                // Update the result entry with summary data
+                                const existingResult = completedResults.find(r => r.id === cmdResultId);
+                                if (existingResult) {
+                                    existingResult.summary = summary.substring(0, 3000);
+                                    existingResult.hasFullOutput = true;
+                                }
                             }
                         }
                         if (pipeline.status !== 'error') pipeline.status = 'completed';
@@ -1598,7 +1844,6 @@ Rules:
                             timestamp: new Date().toISOString()
                         };
 
-                        // Fire and forget — each runs in parallel
                         (async () => {
                             const result = await runAgentTask(t.agent, t.task);
                             const output = result.stdout || result.stderr || '';
@@ -1690,6 +1935,7 @@ Rules:
 
 // Initialize and start
 initializeSnapshots();
+loadAvailableModels();
 
 // Set token baselines so dashboard shows usage from this session, not all-time
 resetAllAgentTokens();

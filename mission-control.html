@@ -18,6 +18,7 @@
             min-height: 100vh;
             position: relative;
             overflow-x: hidden;
+            zoom: 0.8;
         }
 
         .stars {
@@ -658,10 +659,30 @@
             font-size: 0.75rem;
             color: #6b7280;
             margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        .agent-model span {
+        .agent-model select {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid #374151;
             color: #4ade80;
+            padding: 0.25rem 0.4rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            outline: none;
+            max-width: 180px;
+        }
+
+        .agent-model select:hover {
+            border-color: #4ade80;
+        }
+
+        .agent-model select:focus {
+            border-color: #4ade80;
+            box-shadow: 0 0 0 1px rgba(74,222,128,0.3);
         }
 
         .agent-actions {
@@ -1237,6 +1258,176 @@
             min-width: 80px;
         }
 
+        /* Approval Modal */
+        .approval-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2500;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(6px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .approval-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .approval-box {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 1rem;
+            padding: 1.75rem;
+            max-width: 650px;
+            width: 95%;
+            max-height: 80vh;
+            overflow-y: auto;
+            transform: scale(0.9) translateY(10px);
+            transition: transform 0.25s ease;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(139, 92, 246, 0.1);
+        }
+
+        .approval-overlay.visible .approval-box {
+            transform: scale(1) translateY(0);
+        }
+
+        .approval-goal {
+            font-size: 1rem;
+            color: #c4b5fd;
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+        }
+
+        .approval-goal-text {
+            font-size: 0.85rem;
+            color: #9ca3af;
+            margin-bottom: 1.25rem;
+            line-height: 1.4;
+        }
+
+        .approval-strategy {
+            font-size: 0.7rem;
+            color: #6b7280;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .approval-strategy-badge {
+            background: rgba(139, 92, 246, 0.15);
+            color: #a78bfa;
+            padding: 0.15rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .approval-step {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+
+        .approval-step-header {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .approval-step-num {
+            color: #6b7280;
+            font-size: 0.7rem;
+            font-weight: 600;
+            min-width: 1.2rem;
+        }
+
+        .approval-step-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: white;
+            flex: 0 0 28px;
+        }
+
+        .approval-step-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #e5e7eb;
+            flex: 1;
+        }
+
+        .approval-step-remove {
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            transition: color 0.15s, background 0.15s;
+        }
+
+        .approval-step-remove:hover {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .approval-step-textarea {
+            width: 100%;
+            min-height: 50px;
+            padding: 0.5rem 0.75rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.4rem;
+            color: #e5e7eb;
+            font-size: 0.8rem;
+            font-family: inherit;
+            resize: vertical;
+            line-height: 1.4;
+            transition: border-color 0.15s;
+        }
+
+        .approval-step-textarea:focus {
+            outline: none;
+            border-color: #8b5cf6;
+        }
+
+        .approval-arrow {
+            text-align: center;
+            color: #4b5563;
+            font-size: 0.9rem;
+            margin: -0.15rem 0;
+        }
+
+        .approval-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            margin-top: 1.25rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
         /* Live Terminal Panel */
         .agent-terminal-toggle {
             display: flex;
@@ -1593,6 +1784,12 @@
             color: #f87171;
         }
 
+        .pipeline-step.summarising {
+            border-color: rgba(96, 165, 250, 0.4);
+            color: #93c5fd;
+            animation: pulse 1.5s infinite;
+        }
+
         .pipeline-step-arrow {
             color: #4b5563;
             font-size: 0.8rem;
@@ -1834,7 +2031,7 @@
                            onkeydown="if(event.key==='Enter')executeCommand()">
                     <button class="command-submit" id="commandSubmit" onclick="executeCommand()">Execute</button>
                 </div>
-                <div class="command-hint">Astra will decompose your goal and dispatch tasks to the right agents automatically. Press Enter to execute.</div>
+                <div class="command-hint">Astra will decompose your goal into subtasks. You'll review and approve the plan before agents run. Press Enter to start.</div>
             </div>
 
             <!-- Pipeline Presets -->
@@ -2047,6 +2244,20 @@
         </div>
     </div>
 
+    <!-- Approval Modal -->
+    <div class="approval-overlay" id="approvalOverlay">
+        <div class="approval-box">
+            <div class="approval-goal">Execution Plan</div>
+            <div class="approval-goal-text" id="approvalGoalText"></div>
+            <div class="approval-strategy" id="approvalStrategy"></div>
+            <div id="approvalSteps"></div>
+            <div class="approval-actions">
+                <button class="btn" onclick="cancelApproval()">Cancel</button>
+                <button class="btn btn-primary" onclick="submitApproval()">Approve & Run</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_URL = 'http://localhost:8888/data';
         const AGENTS_URL = 'http://localhost:8888/agents';
@@ -2069,7 +2280,6 @@
                 role: 'CEO / Project Manager',
                 avatar: 'astra',
                 specialty: 'Overall context, strategy, delegation. Coordinates all sub-agents. Your main AI assistant.',
-                model: 'MiniMax M2.1',
                 workspace: '/Users/marksstephenson/clawd'
             },
             {
@@ -2078,7 +2288,6 @@
                 role: 'Coder',
                 avatar: 'guido',
                 specialty: 'Python, TypeScript, debugging, architecture. Writes clean, working code.',
-                model: 'MiniMax M2.1',
                 workspace: '/Users/marksstephenson/agents/guido'
             },
             {
@@ -2087,7 +2296,6 @@
                 role: 'Researcher',
                 avatar: 'newton',
                 specialty: 'Fact-finding, synthesis, investigation. Verifies claims with evidence. Presents findings clearly.',
-                model: 'MiniMax M2.1',
                 workspace: '/Users/marksstephenson/agents/newton'
             },
             {
@@ -2096,10 +2304,12 @@
                 role: 'Content Writer',
                 avatar: 'bronte',
                 specialty: 'YouTube scripts, hooks, thumbnails, viral content. Every word exists to stop the scroll.',
-                model: 'MiniMax M2.1',
                 workspace: '/Users/marksstephenson/agents/bronte'
             }
         ];
+
+        // Cached model data from server
+        let cachedModels = null;
 
         // Tab switching
         let activeTab = 'kanban';
@@ -2127,6 +2337,7 @@
 
             if (tabName === 'command') {
                 loadAgents();
+                fetchModels();
                 // Connect SSE for real-time updates, fallback to polling
                 connectSSE();
                 agentRefreshInterval = setInterval(() => loadAgents(), 5000);
@@ -2340,6 +2551,9 @@
 
             renderAgentActivity(activities);
             renderCompletedResults(results);
+
+            // Update model dropdowns with current data
+            populateModelDropdowns(activities);
         }
 
         function createAgentCard(agent, isMain, agentActivity) {
@@ -2367,6 +2581,7 @@
             } else {
                 actionsHtml = `
                     <button class="btn" onclick="showTaskPrompt('${agent.id}')">Chat</button>
+                    <button class="btn" onclick="clearAgentContext('${agent.id}')" style="font-size:0.65rem;padding:0.4rem 0.6rem;">Clear Context</button>
                     <button class="btn" onclick="resetAgentTokens('${agent.id}')" style="font-size:0.65rem;padding:0.4rem 0.6rem;">Reset Tokens</button>
                 `;
             }
@@ -2381,7 +2596,7 @@
                 </div>
                 <div class="agent-role">${agent.role}</div>
                 <div class="agent-specialty">${agent.specialty}</div>
-                <div class="agent-model">Model: <span>${agent.model}</span></div>
+                <div class="agent-model">Model: <select id="model-select-${agent.id}" onchange="setAgentModel('${agent.id}', this.value)"><option>Loading...</option></select></div>
                 <div class="agent-tokens" style="font-size: 0.65rem; color: #9ca3af; margin-bottom: 0.25rem; display: flex; gap: 0.75rem; flex-wrap: wrap;"></div>
                 <div class="agent-session" style="font-size: 0.7rem; color: #4ade80; margin-bottom: 0.5rem;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#4ade80;margin-right:4px;vertical-align:middle;"></span>Session: Fresh</div>
                 <div class="agent-terminal-toggle" onclick="toggleTerminal('${agent.id}', this)">
@@ -2476,6 +2691,13 @@
                 const pipelineInfo = r.pipelineStep ? `Step ${r.pipelineStep}` : '';
                 const metaParts = [pipelineInfo, r.model, duration ? duration : '', timeAgo].filter(Boolean).join(' · ');
 
+                const summaryHtml = r.summary
+                    ? `<div style="margin-top:0.5rem;padding:0.5rem;background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.15);border-radius:0.4rem;">
+                        <div style="font-size:0.65rem;color:#93c5fd;font-weight:600;margin-bottom:0.25rem;">Summary (used for handoff)</div>
+                        <div style="font-size:0.75rem;color:#d1d5db;white-space:pre-wrap;line-height:1.4;">${escapeHtml(r.summary)}</div>
+                       </div>`
+                    : '';
+
                 html += `
                     <div class="result-card ${statusClass}" data-result-id="${r.id}">
                         <div class="result-header">
@@ -2487,6 +2709,7 @@
                             <div class="result-task">${escapeHtml(r.task || 'Unknown task')}</div>
                             <div class="result-meta">${metaParts}</div>
                         </div>
+                        ${summaryHtml}
                         ${r.pipeline ? `<div class="result-time">${escapeHtml(r.pipeline)}</div>` : ''}
                     </div>
                 `;
@@ -2703,12 +2926,16 @@
                     if (label) label.textContent = `Files (${files.length})`;
                 }
 
+                const agentDef = AGENT_DEFINITIONS.find(a => a.id === agentId);
+                const workspace = agentDef?.workspace || '';
+
                 el.innerHTML = files.map((f, i) => {
                     const ext = f.name.split('.').pop().toLowerCase();
                     const icon = { md: '📄', py: '🐍', js: '📦', ts: '📦', cs: '🎮', json: '{}', txt: '📝', sh: '⚡', html: '🌐', css: '🎨' }[ext] || '📄';
                     const size = f.size < 1024 ? `${f.size}B` : f.size < 1048576 ? `${(f.size / 1024).toFixed(1)}KB` : `${(f.size / 1048576).toFixed(1)}MB`;
                     const modified = getTimeAgo(new Date(f.modified));
                     const hasPreview = f.preview && f.preview.length > 0;
+                    const fullPath = workspace ? `${workspace}/${f.name}` : f.name;
 
                     return `
                         <div>
@@ -2718,6 +2945,8 @@
                                     <div class="file-name">${escapeHtml(f.name)}</div>
                                     <div class="file-meta">${size} · ${modified}</div>
                                 </div>
+                                <button onclick="event.stopPropagation(); iterateOnFile('${agentId}', '${escapeHtml(fullPath)}', '${escapeHtml(f.name)}')"
+                                    style="background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);color:#c4b5fd;padding:0.15rem 0.5rem;border-radius:0.25rem;font-size:0.6rem;cursor:pointer;white-space:nowrap;margin-left:auto;">Iterate</button>
                             </div>
                             ${hasPreview ? `<div class="file-preview" id="${agentId}-file-${i}">${escapeHtml(f.preview)}${f.size > 500 ? '\n...' : ''}</div>` : ''}
                         </div>
@@ -2731,6 +2960,49 @@
         function toggleFilePreview(previewId) {
             const el = document.getElementById(previewId);
             if (el) el.classList.toggle('open');
+        }
+
+        async function iterateOnFile(agentId, filePath, fileName) {
+            const agent = AGENT_DEFINITIONS.find(a => a.id === agentId);
+            if (!agent) return;
+
+            // Open task input modal pre-filled with file context
+            taskInputAgentId = agent.id;
+            const avatarEl = document.getElementById('taskInputAvatar');
+            avatarEl.className = `agent-avatar ${agent.avatar}`;
+            avatarEl.textContent = agent.name.charAt(0);
+            document.getElementById('taskInputAgentName').textContent = `Iterate on ${fileName}`;
+            document.getElementById('taskInputAgentRole').textContent = agent.role;
+            document.getElementById('taskInputField').value = `Read and improve the file at ${filePath}. Changes:\n`;
+            document.getElementById('taskInputOverlay').classList.add('visible');
+
+            setTimeout(() => {
+                const field = document.getElementById('taskInputField');
+                field.focus();
+                // Put cursor at end
+                field.selectionStart = field.selectionEnd = field.value.length;
+            }, 100);
+
+            const task = await new Promise((resolve) => { taskInputResolve = resolve; });
+            if (!task) return;
+
+            try {
+                const response = await fetch(SPAWN_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agentId, task })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('Task Sent', `${agent.name} iterating on ${fileName}`, 'success');
+                    addCommunication('User', agent.name, `Iterate: ${fileName}`);
+                    loadAgents();
+                } else {
+                    showToast('Error', result.error || 'Unknown error', 'error');
+                }
+            } catch (e) {
+                showToast('Connection Error', e.message, 'error');
+            }
         }
 
         // Refresh open file browsers periodically
@@ -2775,23 +3047,41 @@
             const topic = await openTaskInput(fakeAgent);
             if (!topic) return;
 
-            // Replace {{topic}} in first step
-            const steps = preset.steps.map(s => ({
-                ...s,
-                taskTemplate: s.taskTemplate.replace(/\{\{topic\}\}/g, topic)
+            // Replace {{topic}} in first step, build plan for approval
+            const steps = preset.steps.map((s, i) => ({
+                agent: s.agentId,
+                task: s.taskTemplate.replace(/\{\{topic\}\}/g, topic),
+                ...(i > 0 ? { dependsOn: i - 1 } : {})
+            }));
+
+            const plan = {
+                id: `preset-${Date.now()}`,
+                goal: `${preset.name}: ${topic}`,
+                tasks: steps,
+                strategy: 'sequential'
+            };
+
+            // Show approval modal
+            const approved = await showApprovalModal(plan);
+            if (!approved) return;
+
+            // Convert approved plan back to pipeline steps format
+            const pipelineSteps = approved.tasks.map(t => ({
+                agentId: t.agent,
+                taskTemplate: t.task
             }));
 
             try {
                 const response = await fetch('http://localhost:8888/agents/pipeline', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ steps, name: `${preset.name}: ${topic}` })
+                    body: JSON.stringify({ steps: pipelineSteps, name: approved.goal })
                 });
                 const result = await response.json();
 
                 if (result.success) {
-                    showToast('Pipeline Started', `${preset.name} pipeline started: ${topic.substring(0, 60)}`, 'success');
-                    addCommunication('Astra', preset.steps[0].agentId === 'newton' ? 'Newton' : 'Guido', `Pipeline: ${topic.substring(0, 50)}`);
+                    showToast('Pipeline Started', `${approved.goal.substring(0, 60)}`, 'success');
+                    addCommunication('Astra', pipelineSteps[0].agentId === 'newton' ? 'Newton' : 'Guido', `Pipeline: ${topic.substring(0, 50)}`);
                     loadAgents();
                 } else {
                     showToast('Pipeline Failed', result.error || 'Unknown error', 'error');
@@ -2873,18 +3163,38 @@
                 return a?.name || s.agentId;
             }).join(' → ');
 
+            // Show approval modal
+            const plan = {
+                id: `custom-${Date.now()}`,
+                goal: pipelineName,
+                tasks: steps.map((s, i) => ({
+                    agent: s.agentId,
+                    task: s.task,
+                    ...(i > 0 ? { dependsOn: i - 1 } : {})
+                })),
+                strategy: 'sequential'
+            };
+
+            const approved = await showApprovalModal(plan);
+            if (!approved) return;
+
+            const pipelineSteps = approved.tasks.map(t => ({
+                agentId: t.agent,
+                taskTemplate: t.task
+            }));
+
             try {
                 const response = await fetch('http://localhost:8888/agents/pipeline', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        steps: steps.map(s => ({ agentId: s.agentId, taskTemplate: s.task })),
-                        name: pipelineName
+                        steps: pipelineSteps,
+                        name: approved.goal
                     })
                 });
                 const result = await response.json();
                 if (result.success) {
-                    showToast('Pipeline Started', `${pipelineName} pipeline running`, 'success');
+                    showToast('Pipeline Started', `${approved.goal} pipeline running`, 'success');
                     hideCustomPipelineBuilder();
                     loadAgents();
                 } else {
@@ -2914,8 +3224,9 @@
                     const name = agent?.name || s.agentId;
                     const arrow = i < p.steps.length - 1 ? '<span class="pipeline-step-arrow">→</span>' : '';
                     const stepTime = s.endedAt ? getTimeAgo(new Date(s.endedAt)) : '';
-                    const stepIcon = s.status === 'completed' ? '✓' : s.status === 'running' ? '◉' : s.status === 'error' ? '✗' : '○';
-                    return `<span class="pipeline-step ${s.status}" title="${escapeHtml(s.task || '')}">${stepIcon} ${name}${stepTime ? ' (' + stepTime + ')' : ''}</span>${arrow}`;
+                    const stepIcon = s.status === 'completed' ? '✓' : s.status === 'running' ? '◉' : s.status === 'summarising' ? '⟳' : s.status === 'error' ? '✗' : '○';
+                    const statusSuffix = s.status === 'summarising' ? ' Summarising...' : '';
+                    return `<span class="pipeline-step ${s.status}" title="${escapeHtml(s.task || '')}">${stepIcon} ${name}${statusSuffix}${stepTime ? ' (' + stepTime + ')' : ''}</span>${arrow}`;
                 }).join('');
 
                 html += `
@@ -2936,6 +3247,9 @@
         }
 
         // ─── Command Bar ─────────────────────────────────────────────────
+        let pendingApprovalPlan = null;
+        let approvalResolve = null;
+
         async function executeCommand() {
             const input = document.getElementById('commandInput');
             const btn = document.getElementById('commandSubmit');
@@ -2943,31 +3257,178 @@
             if (!goal) return;
 
             btn.disabled = true;
-            btn.textContent = 'Dispatching...';
+            btn.textContent = 'Decomposing...';
 
             try {
+                // Astra decomposition can take up to ~90s on server; give 120s on client
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 120000);
+
                 const response = await fetch('http://localhost:8888/agents/command', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ goal })
+                    body: JSON.stringify({ goal }),
+                    signal: controller.signal
                 });
-                const result = await response.json();
+                clearTimeout(timeoutId);
 
-                if (result.success) {
-                    showToast('Command Dispatched', `Astra is working on: ${goal.substring(0, 80)}`, 'success');
+                const result = await response.json();
+                console.log('[COMMAND] Server response:', JSON.stringify(result).substring(0, 300));
+
+                if (result.success && result.plan) {
                     addCommunication('User', 'Astra', goal.substring(0, 80));
-                    input.value = '';
-                    loadAgents();
+                    // Show approval modal with Astra's decomposition
+                    const approved = await showApprovalModal(result.plan);
+                    if (approved) {
+                        // Dispatch the (possibly edited) plan
+                        const payload = { plan: approved };
+                        console.log('[APPROVE] Sending to /agents/command/approve:', JSON.stringify(payload.plan.tasks.map(t => ({ agent: t.agent, task: t.task.substring(0, 100) }))));
+                        const approveRes = await fetch('http://localhost:8888/agents/command/approve', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const approveResult = await approveRes.json();
+                        if (approveResult.success) {
+                            showToast('Pipeline Dispatched', `Running ${approved.tasks.length} tasks for: ${goal.substring(0, 60)}`, 'success');
+                            input.value = '';
+                            loadAgents();
+                        } else {
+                            showToast('Dispatch Failed', approveResult.error || 'Unknown error', 'error');
+                        }
+                    }
+                } else if (result.success && !result.plan) {
+                    showToast('Decomposition Error', 'Astra returned no plan. Try again.', 'error');
                 } else {
                     showToast('Command Failed', result.error || 'Unknown error', 'error');
                 }
             } catch (e) {
-                showToast('Connection Error', e.message, 'error');
+                if (e.name === 'AbortError') {
+                    showToast('Timeout', 'Astra took too long to decompose. Try a simpler goal or try again.', 'error');
+                } else {
+                    showToast('Connection Error', e.message, 'error');
+                }
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Execute';
             }
         }
+
+        // ─── Approval Modal ──────────────────────────────────────────────
+        function showApprovalModal(plan) {
+            pendingApprovalPlan = JSON.parse(JSON.stringify(plan)); // deep clone
+
+            // Set goal text
+            document.getElementById('approvalGoalText').textContent = plan.goal || '';
+
+            // Strategy badge
+            const strategyEl = document.getElementById('approvalStrategy');
+            const stratLabel = plan.strategy === 'sequential'
+                ? 'Sequential — each step feeds into the next'
+                : 'Parallel — tasks run independently';
+            strategyEl.innerHTML = `<span class="approval-strategy-badge">${plan.strategy || 'sequential'}</span> ${stratLabel}`;
+
+            renderApprovalSteps();
+
+            document.getElementById('approvalOverlay').classList.add('visible');
+
+            return new Promise((resolve) => { approvalResolve = resolve; });
+        }
+
+        function renderApprovalSteps() {
+            const container = document.getElementById('approvalSteps');
+            const agentAvatars = { newton: 'newton', guido: 'guido', bronte: 'bronte', main: 'astra' };
+            const agentColors = { newton: '#60a5fa', guido: '#4ade80', bronte: '#f472b6', main: '#a78bfa' };
+            const agentNames = { newton: 'Newton', guido: 'Guido', bronte: 'Bronte', main: 'Astra' };
+
+            let html = '';
+            pendingApprovalPlan.tasks.forEach((t, i) => {
+                const name = agentNames[t.agent] || t.agent;
+                const color = agentColors[t.agent] || '#8b5cf6';
+                const initial = name.charAt(0);
+
+                if (i > 0 && pendingApprovalPlan.strategy === 'sequential') {
+                    html += `<div class="approval-arrow">↓</div>`;
+                }
+
+                html += `
+                    <div class="approval-step">
+                        <div class="approval-step-header">
+                            <span class="approval-step-num">${i + 1}.</span>
+                            <div class="approval-step-avatar" style="background:${color};">${initial}</div>
+                            <span class="approval-step-name">${name}</span>
+                            ${pendingApprovalPlan.tasks.length > 1
+                                ? `<button class="approval-step-remove" onclick="removeApprovalStep(${i})" title="Remove step">×</button>`
+                                : ''}
+                        </div>
+                        <textarea class="approval-step-textarea"
+                            oninput="updateApprovalStep(${i}, this.value)"
+                            rows="2">${escapeHtml(t.task)}</textarea>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function updateApprovalStep(index, value) {
+            if (pendingApprovalPlan && pendingApprovalPlan.tasks[index]) {
+                pendingApprovalPlan.tasks[index].task = value;
+            }
+        }
+
+        function removeApprovalStep(index) {
+            if (!pendingApprovalPlan || pendingApprovalPlan.tasks.length <= 1) return;
+            pendingApprovalPlan.tasks.splice(index, 1);
+            // Re-index dependencies
+            pendingApprovalPlan.tasks.forEach((t, i) => {
+                if (t.dependsOn !== undefined && t.dependsOn !== null) {
+                    if (t.dependsOn >= index) t.dependsOn = Math.max(0, t.dependsOn - 1);
+                    if (t.dependsOn >= i) t.dependsOn = i > 0 ? i - 1 : undefined;
+                }
+            });
+            renderApprovalSteps();
+        }
+
+        function submitApproval() {
+            // Read current textarea values directly from the DOM — oninput may not have fired
+            if (pendingApprovalPlan) {
+                const textareas = document.querySelectorAll('.approval-step-textarea');
+                textareas.forEach((ta, i) => {
+                    if (pendingApprovalPlan.tasks[i]) {
+                        pendingApprovalPlan.tasks[i].task = ta.value;
+                    }
+                });
+                console.log('[APPROVAL] Submitting plan:', JSON.stringify(pendingApprovalPlan.tasks.map(t => ({ agent: t.agent, task: t.task.substring(0, 80) }))));
+            }
+
+            document.getElementById('approvalOverlay').classList.remove('visible');
+            if (approvalResolve) {
+                approvalResolve(pendingApprovalPlan);
+                approvalResolve = null;
+            }
+            pendingApprovalPlan = null;
+        }
+
+        function cancelApproval() {
+            document.getElementById('approvalOverlay').classList.remove('visible');
+            if (approvalResolve) {
+                approvalResolve(null);
+                approvalResolve = null;
+            }
+            pendingApprovalPlan = null;
+        }
+
+        // Close approval on backdrop click
+        document.getElementById('approvalOverlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) cancelApproval();
+        });
+
+        // Close approval on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.getElementById('approvalOverlay').classList.contains('visible')) {
+                cancelApproval();
+            }
+        });
 
         // ─── Telegram ────────────────────────────────────────────────────
         async function loadTelegramConfig() {
@@ -3149,6 +3610,84 @@
             }
             if (e.key === 'Escape') cancelTaskInput();
         });
+
+        // ─── Model selection ──────────────────────────────────────────
+        async function fetchModels() {
+            try {
+                const response = await fetch('http://localhost:8888/models');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                cachedModels = await response.json();
+                populateModelDropdowns();
+            } catch (e) {
+                console.error('[Models] Error fetching:', e.message);
+                AGENT_DEFINITIONS.forEach(agent => {
+                    const select = document.getElementById(`model-select-${agent.id}`);
+                    if (select) select.innerHTML = '<option>Unavailable</option>';
+                });
+            }
+        }
+
+        function populateModelDropdowns(activityData) {
+            if (!cachedModels) return;
+            const models = cachedModels.models || [];
+            const defaultId = cachedModels.default || '';
+            const overrides = cachedModels.agentModels || {};
+
+            AGENT_DEFINITIONS.forEach(agent => {
+                const select = document.getElementById(`model-select-${agent.id}`);
+                if (!select) return;
+
+                // Determine current model for this agent
+                let currentModelId = overrides[agent.id] || defaultId;
+
+                // If we have activity data with currentModel, use that for display matching
+                if (activityData) {
+                    const act = activityData.find(a => a.agent === agent.id);
+                    if (act?.currentModel) {
+                        // currentModel is a friendly name, match it to an ID
+                        const matched = models.find(m => m.name === act.currentModel);
+                        if (matched) currentModelId = matched.id;
+                    }
+                }
+
+                // Only rebuild options if models changed
+                const optionCount = select.options.length;
+                const firstVal = optionCount > 0 ? select.options[0].value : '';
+                if (optionCount !== models.length || firstVal === 'Loading...') {
+                    select.innerHTML = models.map(m => {
+                        const label = m.id === defaultId ? `${m.name} (default)` : m.name;
+                        return `<option value="${m.id}">${label}</option>`;
+                    }).join('');
+                }
+
+                // Set selected value
+                select.value = currentModelId;
+            });
+        }
+
+        async function setAgentModel(agentId, modelId) {
+            const agent = AGENT_DEFINITIONS.find(a => a.id === agentId);
+            try {
+                const response = await fetch('http://localhost:8888/models/set', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agentId, modelId })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(`${agent?.name || agentId} model set to ${result.model}`, 'success');
+                    // Update cached overrides
+                    if (cachedModels) cachedModels.agentModels[agentId] = modelId;
+                } else {
+                    showToast(`Failed to set model: ${result.error}`, 'error');
+                    // Revert dropdown
+                    fetchModels();
+                }
+            } catch (e) {
+                showToast(`Error setting model: ${e.message}`, 'error');
+                fetchModels();
+            }
+        }
 
         // ─── Agent actions ─────────────────────────────────────────────
         async function spawnAgent(agentId) {
