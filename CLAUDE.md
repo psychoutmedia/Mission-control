@@ -178,3 +178,124 @@ Note: `runs.json` only tracks subagent runs (mostly Guido). Tasks dispatched via
 
 ### North Star Vision
 Open Mission Control, type "Build me a landing page for product X", and watch Astra break it down, Newton research competitors, Bronte write copy, and Guido build the page — all in real-time with live streaming output, agents handing off work to each other, with the user approving key decisions from the dashboard.
+
+### North Star Audit (2026-02-22) — 87% Complete
+
+Infrastructure is essentially solved (pipeline execution 98%, user approval 95%, SSE 95%). The remaining 13% splits into polish gaps (syntax highlighting, notification click handlers, diagram labels) that don't change capability, and genuine capability gaps that would lift output quality. The two priorities below target the intelligence layer — prompt engineering and data structures, not plumbing.
+
+---
+
+## Roadmap — Next Session (2026-02-23)
+
+### Priority 1: Structured Handoff Format (currently 78%)
+
+**The problem:** `summariseOutput()` produces raw prose. Newton returns a text blob, Bronte has to interpret it. Context is lost, emphasis is flattened, sources disappear. The pipes are solid but the data flowing through them is unstructured.
+
+**The fix: structured JSON handoff protocol**
+
+Replace the generic summarisation prompt with an agent-role-aware prompt that returns JSON:
+
+```json
+{
+  "summary": "Brief 2-3 sentence overview",
+  "key_findings": ["fact 1", "fact 2", "fact 3"],
+  "sources": ["url or reference"],
+  "recommended_angle": "What the next agent should focus on",
+  "raw_data": { "any structured data relevant to the task" },
+  "blockers": ["anything that couldn't be resolved"],
+  "confidence": "high|medium|low"
+}
+```
+
+**Implementation steps:**
+
+1. **Role-aware summarisation prompts** — Replace the single generic prompt in `summariseOutput()` with per-agent prompts:
+   - Newton: emphasise findings, sources, evidence quality, recommended angles
+   - Bronte: emphasise key themes, hooks, narrative structure, target audience insights
+   - Guido: emphasise technical decisions, file paths, dependencies, API patterns
+   - Each prompt requests the JSON schema above
+
+2. **JSON parsing with fallback** — Parse the agent's response as JSON. If it fails (agent returned prose), wrap it in `{ summary: <raw text>, key_findings: [] }` so the pipeline never breaks.
+
+3. **Structured context injection** — When injecting into next step's `{{input}}`, format the JSON into a readable prompt section:
+   ```
+   ## Handoff from Newton
+   **Summary:** ...
+   **Key Findings:**
+   - ...
+   **Recommended Angle:** ...
+   **Sources:** ...
+   ```
+   This gives the next agent structured context without requiring it to parse JSON itself.
+
+4. **Review gate enhancement** — Show the structured fields in the review gate UI instead of a raw textarea. User can edit individual fields (findings, angle, etc.) rather than rewriting prose. Display sources as links.
+
+5. **Store structured handoff on step object** — `step.handoff = { ... }` alongside `step.summary` for backward compatibility. Frontend can render either.
+
+**Files to modify:**
+- `mission-control-server.js` — `summariseOutput()` rewrite, context injection in pipeline loops
+- `mission-control.html` — review gate panel to render structured fields
+
+**Success criteria:** Run a Newton → Bronte pipeline. Newton's handoff should contain structured findings with sources. Bronte's output should demonstrably reference specific findings rather than interpreting a text blob.
+
+---
+
+### Priority 2: Consolidated Pipeline Output View (currently unrated, significant gap)
+
+**The problem:** When a pipeline completes, results are scattered — each step appears as a separate card in Agent Results, output files live in different agent workspaces, and there's no single view of "here's what the pipeline produced." The user has to mentally assemble the deliverable.
+
+**The fix: Pipeline Report panel**
+
+**Implementation steps:**
+
+1. **Collect pipeline outputs server-side** — When a pipeline completes, build a report object:
+   ```json
+   {
+     "pipelineId": "...",
+     "goal": "Build me a landing page",
+     "status": "completed",
+     "totalDuration": 245000,
+     "steps": [
+       {
+         "agent": "Newton",
+         "task": "Research competitors...",
+         "status": "completed",
+         "duration": 85000,
+         "handoff": { "summary": "...", "key_findings": [...] },
+         "outputFiles": ["research-notes.md"]
+       },
+       ...
+     ],
+     "deliverables": [
+       { "agent": "Guido", "file": "index.html", "path": "/Users/.../agents/guido/index.html", "size": 4200 }
+     ]
+   }
+   ```
+   Store in `pipeline.report` when pipeline completes.
+
+2. **New endpoint: `GET /pipelines/:id/report`** — Returns the full report JSON for a completed pipeline.
+
+3. **Pipeline Report UI** — New expandable section in the pipeline card (or a modal triggered by "View Report" button on completed pipelines):
+   - **Header:** Goal, total duration, status
+   - **Step timeline:** Vertical timeline showing each agent's contribution with duration bars
+   - **Per-step cards:** Agent avatar, task, handoff summary (structured if available), output files with preview links
+   - **Deliverables section:** Files produced by the final step, with inline preview and "Open in File Browser" link
+   - **Handoff chain visualization:** Show how context flowed: Newton's findings → Bronte's angle → Guido's implementation
+
+4. **Detect deliverables automatically** — After final step completes, scan the agent's workspace for files modified during the pipeline window (compare `modifiedMs` against `pipeline.startedAt`). These are the deliverables.
+
+5. **Link to File Browser** — Each deliverable links to the agent's file browser panel, auto-scrolled to the relevant file. Clicking previews inline.
+
+**Files to modify:**
+- `mission-control-server.js` — report generation on pipeline completion, new GET endpoint, deliverable detection
+- `mission-control.html` — Pipeline Report panel/modal, timeline rendering, deliverable preview
+
+**Success criteria:** Run a full Newton → Bronte → Guido pipeline. On completion, click "View Report" and see: what was researched, what was written, what was built, with file links and structured summaries for each step.
+
+---
+
+### Stretch Goals (if time permits)
+
+- **Smarter Astra decomposition** — Enhance the decomposition prompt to include: expected output format per task, success criteria, estimated complexity, explicit instructions for what each agent should hand off
+- **Edit & Retry** — When a step fails and user clicks retry, show an editable textarea with the original task so they can tweak parameters before re-running
+- **Add steps in approval modal** — Let users add new steps (not just remove) during plan review, with agent selector dropdown
