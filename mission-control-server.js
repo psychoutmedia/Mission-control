@@ -1396,7 +1396,7 @@ const server = http.createServer(async (req, res) => {
         req.on('data', chunk => { body += chunk.toString(); });
         req.on('end', async () => {
             try {
-                const { steps, name } = JSON.parse(body);
+                const { steps, name, reviewGates } = JSON.parse(body);
                 // steps: [{ agentId, taskTemplate }]
                 // taskTemplate can include {{input}} which gets replaced with previous output
 
@@ -1413,6 +1413,7 @@ const server = http.createServer(async (req, res) => {
                         const a = AGENTS.find(ag => ag.id === s.agentId);
                         return a?.name || s.agentId;
                     }).join(' → '),
+                    reviewGates: !!reviewGates,
                     steps: steps.map((s, i) => ({
                         ...s,
                         index: i,
@@ -1519,11 +1520,36 @@ const server = http.createServer(async (req, res) => {
                     const pEmoji = step.status === 'completed' ? '✅' : '❌';
                     sendTelegramNotification(`${pEmoji} *${agent?.name}* ${step.status} (pipeline step ${i + 1}/${pipeline.steps.length})\n${(step.taskTemplate || task).substring(0, 200)}`);
 
-                    // If step failed, abort pipeline
+                    // If step failed, pause for user retry/override/abort
                     if (step.status === 'error') {
-                        pipeline.status = 'error';
-                        console.log(`[PIPELINE] ABORTING — Step ${i + 1} failed (${agent?.name})`);
-                        break;
+                        console.log(`[PIPELINE] Step ${i + 1} failed (${agent?.name}) — waiting for user action`);
+                        pipeline.status = 'step_error';
+                        step.status = 'error';
+
+                        const errorAction = await new Promise(resolve => {
+                            pipeline._errorResolve = resolve;
+                        });
+                        delete pipeline._errorResolve;
+
+                        if (errorAction.action === 'retry') {
+                            console.log(`[PIPELINE] Retrying step ${i + 1}...`);
+                            step.status = 'running';
+                            pipeline.status = 'running';
+                            i--; // re-run this step
+                            continue;
+                        } else if (errorAction.action === 'override') {
+                            console.log(`[PIPELINE] Overriding step ${i + 1} with user-provided output`);
+                            previousOutput = errorAction.output || '';
+                            step.output = previousOutput.substring(0, 5000);
+                            step.status = 'completed';
+                            step.overridden = true;
+                            pipeline.status = 'running';
+                        } else {
+                            // abort
+                            pipeline.status = 'error';
+                            console.log(`[PIPELINE] ABORTED by user at step ${i + 1}`);
+                            break;
+                        }
                     }
 
                     // Summarise output for handoff to next step (non-final steps only)
@@ -1541,6 +1567,28 @@ const server = http.createServer(async (req, res) => {
                         if (existingResult) {
                             existingResult.summary = summary.substring(0, 3000);
                             existingResult.hasFullOutput = true;
+                        }
+
+                        // Review gate: pause for user approval before next step
+                        if (pipeline.reviewGates) {
+                            console.log(`[PIPELINE] Review gate after step ${i + 1} — waiting for user approval`);
+                            step.status = 'awaiting_review';
+                            pipeline.status = 'awaiting_review';
+
+                            const review = await new Promise(resolve => {
+                                pipeline._reviewResolve = resolve;
+                            });
+                            delete pipeline._reviewResolve;
+
+                            if (review.action === 'approve') {
+                                previousOutput = review.editedSummary || previousOutput;
+                                step.summary = previousOutput;
+                            } else if (review.action === 'skip') {
+                                previousOutput = '';
+                            }
+                            step.status = 'completed';
+                            pipeline.status = 'running';
+                            console.log(`[PIPELINE] Review gate resolved: ${review.action}`);
                         }
                     }
 
@@ -1738,6 +1786,7 @@ Rules:
                     const pipeline = {
                         id: pipelineId,
                         name: `Command: ${goal}`,
+                        reviewGates: !!plan.reviewGates,
                         steps: ordered.map((s, i) => ({
                             agentId: s.agent,
                             taskTemplate: s.task,
@@ -1806,9 +1855,31 @@ Rules:
                             const cEmoji = step.status === 'completed' ? '✅' : '❌';
                             sendTelegramNotification(`${cEmoji} *${agent?.name}* ${step.status} (pipeline step ${i + 1}/${pipeline.steps.length})\n${(step.taskTemplate || task).substring(0, 200)}`);
 
+                            // If step failed, pause for user retry/override/abort
                             if (step.status === 'error') {
-                                pipeline.status = 'error';
-                                break;
+                                console.log(`[PIPELINE] Step ${i + 1} failed (${agent?.name}) — waiting for user action`);
+                                pipeline.status = 'step_error';
+
+                                const errorAction = await new Promise(resolve => {
+                                    pipeline._errorResolve = resolve;
+                                });
+                                delete pipeline._errorResolve;
+
+                                if (errorAction.action === 'retry') {
+                                    step.status = 'running';
+                                    pipeline.status = 'running';
+                                    i--;
+                                    continue;
+                                } else if (errorAction.action === 'override') {
+                                    previousOutput = errorAction.output || '';
+                                    step.output = previousOutput.substring(0, 5000);
+                                    step.status = 'completed';
+                                    step.overridden = true;
+                                    pipeline.status = 'running';
+                                } else {
+                                    pipeline.status = 'error';
+                                    break;
+                                }
                             }
 
                             // Summarise output for next step (non-final steps only)
@@ -1824,6 +1895,27 @@ Rules:
                                 if (existingResult) {
                                     existingResult.summary = summary.substring(0, 3000);
                                     existingResult.hasFullOutput = true;
+                                }
+
+                                // Review gate: pause for user approval before next step
+                                if (pipeline.reviewGates) {
+                                    console.log(`[PIPELINE] Review gate after step ${i + 1}`);
+                                    step.status = 'awaiting_review';
+                                    pipeline.status = 'awaiting_review';
+
+                                    const review = await new Promise(resolve => {
+                                        pipeline._reviewResolve = resolve;
+                                    });
+                                    delete pipeline._reviewResolve;
+
+                                    if (review.action === 'approve') {
+                                        previousOutput = review.editedSummary || previousOutput;
+                                        step.summary = previousOutput;
+                                    } else if (review.action === 'skip') {
+                                        previousOutput = '';
+                                    }
+                                    step.status = 'completed';
+                                    pipeline.status = 'running';
                                 }
                             }
                         }
@@ -1879,6 +1971,66 @@ Rules:
             } catch (e) {
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: false, error: e.message }));
+            }
+        });
+        return;
+    }
+
+    // ─── Pipeline review gate endpoint ─────────────────────────────────
+    if (req.url === '/pipelines/review' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', () => {
+            try {
+                const { pipelineId, stepIndex, action, editedSummary } = JSON.parse(body);
+                const pipeline = activePipelines.find(p => p.id === pipelineId);
+                if (!pipeline) {
+                    res.writeHead(404);
+                    res.end(JSON.stringify({ error: 'Pipeline not found' }));
+                    return;
+                }
+                if (pipeline.status !== 'awaiting_review' || !pipeline._reviewResolve) {
+                    res.writeHead(400);
+                    res.end(JSON.stringify({ error: 'Pipeline is not awaiting review' }));
+                    return;
+                }
+                console.log(`[REVIEW] Pipeline ${pipelineId} step ${stepIndex}: ${action}`);
+                pipeline._reviewResolve({ action, editedSummary });
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true }));
+            } catch (e) {
+                res.writeHead(400);
+                res.end(JSON.stringify({ error: e.message }));
+            }
+        });
+        return;
+    }
+
+    // ─── Pipeline error recovery endpoint ────────────────────────────────
+    if (req.url === '/pipelines/retry' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', () => {
+            try {
+                const { pipelineId, stepIndex, action, output } = JSON.parse(body);
+                const pipeline = activePipelines.find(p => p.id === pipelineId);
+                if (!pipeline) {
+                    res.writeHead(404);
+                    res.end(JSON.stringify({ error: 'Pipeline not found' }));
+                    return;
+                }
+                if (pipeline.status !== 'step_error' || !pipeline._errorResolve) {
+                    res.writeHead(400);
+                    res.end(JSON.stringify({ error: 'Pipeline is not in error state' }));
+                    return;
+                }
+                console.log(`[RETRY] Pipeline ${pipelineId} step ${stepIndex}: ${action}`);
+                pipeline._errorResolve({ action, output });
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true }));
+            } catch (e) {
+                res.writeHead(400);
+                res.end(JSON.stringify({ error: e.message }));
             }
         });
         return;

@@ -1790,6 +1790,141 @@
             animation: pulse 1.5s infinite;
         }
 
+        .pipeline-step.awaiting_review {
+            border-color: rgba(245, 158, 11, 0.6);
+            color: #fbbf24;
+            animation: pulse 1.5s infinite;
+        }
+
+        .pipeline-step.step_error {
+            border-color: rgba(239, 68, 68, 0.5);
+            color: #f87171;
+        }
+
+        .pipeline-card.awaiting_review {
+            border-color: rgba(245, 158, 11, 0.5);
+        }
+
+        .pipeline-card.step_error {
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        .pipeline-badge.awaiting_review {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+
+        .pipeline-badge.step_error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }
+
+        .pipeline-review-gate {
+            margin: 0.75rem 0;
+            padding: 0.75rem;
+            background: rgba(245, 158, 11, 0.05);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            border-radius: 0.5rem;
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.15);
+        }
+
+        .pipeline-review-gate textarea {
+            width: 100%;
+            min-height: 80px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #374151;
+            color: #e5e7eb;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-family: monospace;
+            resize: vertical;
+            margin: 0.5rem 0;
+        }
+
+        .pipeline-review-gate textarea:focus {
+            outline: none;
+            border-color: #f59e0b;
+        }
+
+        .pipeline-error-panel {
+            margin: 0.75rem 0;
+            padding: 0.75rem;
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 0.5rem;
+        }
+
+        .pipeline-error-panel textarea {
+            width: 100%;
+            min-height: 60px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #374151;
+            color: #e5e7eb;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-family: monospace;
+            resize: vertical;
+            margin: 0.5rem 0;
+        }
+
+        .pipeline-error-panel textarea:focus {
+            outline: none;
+            border-color: #ef4444;
+        }
+
+        .pipeline-action-btns {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .pipeline-action-btns .btn {
+            font-size: 0.7rem;
+            padding: 0.3rem 0.7rem;
+        }
+
+        /* Dynamic coordination diagram */
+        .comm-flow-arrow {
+            display: flex;
+            align-items: center;
+            font-size: 1.2rem;
+            color: #4b5563;
+            position: relative;
+        }
+
+        .comm-flow-arrow.completed {
+            color: #4ade80;
+        }
+
+        .comm-flow-arrow.running {
+            color: #fbbf24;
+        }
+
+        .comm-flow-arrow.awaiting_review {
+            color: #f59e0b;
+        }
+
+        .comm-status-label {
+            font-size: 0.6rem;
+            margin-top: 0.15rem;
+            text-align: center;
+            max-width: 70px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        @keyframes flowArrow {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        .comm-flow-arrow.running span {
+            animation: flowArrow 1.2s infinite;
+        }
+
         .pipeline-step-arrow {
             color: #4b5563;
             font-size: 0.8rem;
@@ -2251,6 +2386,12 @@
             <div class="approval-goal-text" id="approvalGoalText"></div>
             <div class="approval-strategy" id="approvalStrategy"></div>
             <div id="approvalSteps"></div>
+            <div style="margin:0.75rem 0;padding:0.5rem 0.75rem;background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.2);border-radius:0.375rem;">
+                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.8rem;color:#fbbf24;">
+                    <input type="checkbox" id="approvalReviewGates"> Review between steps
+                </label>
+                <div style="font-size:0.6rem;color:#6b7280;margin-top:0.25rem;margin-left:1.5rem;">Pause after each step to review and optionally edit output before it's passed to the next agent.</div>
+            </div>
             <div class="approval-actions">
                 <button class="btn" onclick="cancelApproval()">Cancel</button>
                 <button class="btn btn-primary" onclick="submitApproval()">Approve & Run</button>
@@ -2404,6 +2545,7 @@
 
             // Update pipeline status
             if (data.pipelines) {
+                lastPipelines = data.pipelines;
                 renderPipelines(data.pipelines);
             }
         }
@@ -2750,30 +2892,94 @@
         // Track communications between agents
         let communications = [];
 
+        // Track last known pipelines for diagram
+        let lastPipelines = [];
+
         function renderCommunicationDiagram(activities) {
             const container = document.getElementById('comm-diagram');
             const commActivityContainer = document.getElementById('comm-activity');
 
             if (!container) return;
 
+            // Check for an active pipeline to show dynamic flow
+            const activePipeline = lastPipelines.find(p =>
+                p.status === 'running' || p.status === 'awaiting_review' || p.status === 'step_error'
+            );
+
             let diagramHtml = '';
-            AGENT_DEFINITIONS.forEach((agent, index) => {
-                const act = activities.find(a => a.agent === agent.id);
-                const isRunning = act?.status === 'running';
-                const isActive = act?.status === 'active';
-                const avatarClass = isRunning ? `comm-avatar ${agent.avatar} comm-active` :
-                                    isActive ? `comm-avatar ${agent.avatar} comm-active` :
-                                    `comm-avatar ${agent.avatar} comm-idle`;
 
-                if (index > 0) diagramHtml += '<span class="comm-arrow">→</span>';
+            if (activePipeline) {
+                // Dynamic pipeline flow diagram
+                activePipeline.steps.forEach((step, index) => {
+                    const agent = AGENT_DEFINITIONS.find(a => a.id === step.agentId);
+                    if (!agent) return;
 
-                diagramHtml += `
-                    <div class="comm-agent">
-                        <div class="${avatarClass}">${agent.name.charAt(0)}</div>
-                        <span class="comm-name">${agent.name}</span>
-                    </div>
-                `;
-            });
+                    const isCompleted = step.status === 'completed';
+                    const isRunning = step.status === 'running' || step.status === 'summarising';
+                    const isReview = step.status === 'awaiting_review';
+                    const isError = step.status === 'error';
+
+                    let avatarClass = `comm-avatar ${agent.avatar}`;
+                    if (isRunning) avatarClass += ' comm-active';
+                    else if (isReview) avatarClass += ' comm-active';
+                    else if (isError) avatarClass += ' comm-error';
+                    else if (isCompleted) avatarClass += '';
+                    else avatarClass += ' comm-idle';
+
+                    const statusIcon = isCompleted ? '✓' :
+                                       isRunning ? '◉' :
+                                       isReview ? '⏸' :
+                                       isError ? '✗' : '○';
+                    const statusColor = isCompleted ? '#4ade80' :
+                                        isRunning ? '#fbbf24' :
+                                        isReview ? '#f59e0b' :
+                                        isError ? '#f87171' : '#6b7280';
+                    const statusLabel = isCompleted ? 'Done' :
+                                        isRunning ? (step.status === 'summarising' ? 'Summarising' : 'Working...') :
+                                        isReview ? 'Review' :
+                                        isError ? 'Failed' : 'Pending';
+
+                    // Arrow between steps
+                    if (index > 0) {
+                        const prevStep = activePipeline.steps[index - 1];
+                        const prevDone = prevStep.status === 'completed';
+                        const arrowClass = prevDone ? 'comm-flow-arrow completed' :
+                                           prevStep.status === 'awaiting_review' ? 'comm-flow-arrow awaiting_review' :
+                                           prevStep.status === 'running' || prevStep.status === 'summarising' ? 'comm-flow-arrow running' :
+                                           'comm-flow-arrow';
+
+                        diagramHtml += `<div class="${arrowClass}"><span>${prevDone ? '══▶' : '───▶'}</span></div>`;
+                    }
+
+                    diagramHtml += `
+                        <div class="comm-agent">
+                            <div class="${avatarClass}">${agent.name.charAt(0)}</div>
+                            <span class="comm-name">${agent.name}</span>
+                            <span class="comm-status-label" style="color:${statusColor};">${statusIcon} ${statusLabel}</span>
+                        </div>
+                    `;
+                });
+            } else {
+                // Default static diagram
+                AGENT_DEFINITIONS.forEach((agent, index) => {
+                    const act = activities.find(a => a.agent === agent.id);
+                    const isRunning = act?.status === 'running';
+                    const isActive = act?.status === 'active';
+                    const avatarClass = isRunning ? `comm-avatar ${agent.avatar} comm-active` :
+                                        isActive ? `comm-avatar ${agent.avatar} comm-active` :
+                                        `comm-avatar ${agent.avatar} comm-idle`;
+
+                    if (index > 0) diagramHtml += '<span class="comm-arrow">→</span>';
+
+                    diagramHtml += `
+                        <div class="comm-agent">
+                            <div class="${avatarClass}">${agent.name.charAt(0)}</div>
+                            <span class="comm-name">${agent.name}</span>
+                        </div>
+                    `;
+                });
+            }
+
             container.innerHTML = diagramHtml;
 
             if (commActivityContainer) {
@@ -3075,7 +3281,7 @@
                 const response = await fetch('http://localhost:8888/agents/pipeline', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ steps: pipelineSteps, name: approved.goal })
+                    body: JSON.stringify({ steps: pipelineSteps, name: approved.goal, reviewGates: approved.reviewGates })
                 });
                 const result = await response.json();
 
@@ -3189,7 +3395,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         steps: pipelineSteps,
-                        name: approved.goal
+                        name: approved.goal,
+                        reviewGates: approved.reviewGates
                     })
                 });
                 const result = await response.json();
@@ -3219,31 +3426,148 @@
                 const elapsed = p.startedAt ? getTimeAgo(new Date(p.startedAt)) : '';
                 const isActive = p.status === 'running';
 
+                const statusLabels = {
+                    running: 'running', completed: 'completed', error: 'error',
+                    awaiting_review: 'review needed', step_error: 'step failed'
+                };
+
                 const stepsHtml = p.steps.map((s, i) => {
                     const agent = AGENT_DEFINITIONS.find(a => a.id === s.agentId);
                     const name = agent?.name || s.agentId;
                     const arrow = i < p.steps.length - 1 ? '<span class="pipeline-step-arrow">→</span>' : '';
                     const stepTime = s.endedAt ? getTimeAgo(new Date(s.endedAt)) : '';
-                    const stepIcon = s.status === 'completed' ? '✓' : s.status === 'running' ? '◉' : s.status === 'summarising' ? '⟳' : s.status === 'error' ? '✗' : '○';
-                    const statusSuffix = s.status === 'summarising' ? ' Summarising...' : '';
+                    const stepIcon = s.status === 'completed' ? '✓' :
+                                     s.status === 'running' ? '◉' :
+                                     s.status === 'summarising' ? '⟳' :
+                                     s.status === 'awaiting_review' ? '⏸' :
+                                     s.status === 'error' ? '✗' : '○';
+                    const statusSuffix = s.status === 'summarising' ? ' Summarising...' :
+                                         s.status === 'awaiting_review' ? ' Review...' : '';
                     return `<span class="pipeline-step ${s.status}" title="${escapeHtml(s.task || '')}">${stepIcon} ${name}${statusSuffix}${stepTime ? ' (' + stepTime + ')' : ''}</span>${arrow}`;
                 }).join('');
+
+                // Review gate panel
+                let reviewGateHtml = '';
+                if (p.status === 'awaiting_review') {
+                    const reviewStep = p.steps.find(s => s.status === 'awaiting_review');
+                    const reviewStepIndex = reviewStep ? p.steps.indexOf(reviewStep) : -1;
+                    const summaryText = reviewStep?.summary || reviewStep?.output || '';
+                    const agent = reviewStep ? AGENT_DEFINITIONS.find(a => a.id === reviewStep.agentId) : null;
+
+                    reviewGateHtml = `
+                        <div class="pipeline-review-gate">
+                            <div style="font-size:0.75rem;color:#fbbf24;font-weight:600;margin-bottom:0.25rem;">
+                                Review ${agent?.name || ''}'s output before continuing
+                            </div>
+                            <div style="font-size:0.65rem;color:#9ca3af;margin-bottom:0.5rem;">Edit the summary below if needed. This will be passed to the next step.</div>
+                            <textarea id="review-summary-${p.id}">${escapeHtml(summaryText)}</textarea>
+                            <details style="margin-bottom:0.5rem;">
+                                <summary style="font-size:0.65rem;color:#6b7280;cursor:pointer;">Show raw output</summary>
+                                <pre style="font-size:0.6rem;color:#9ca3af;max-height:150px;overflow:auto;margin-top:0.25rem;white-space:pre-wrap;word-break:break-word;">${escapeHtml(reviewStep?.output || '')}</pre>
+                            </details>
+                            <div class="pipeline-action-btns">
+                                <button class="btn btn-primary" onclick="submitPipelineReview('${p.id}', ${reviewStepIndex}, 'approve')">Approve & Continue</button>
+                                <button class="btn" onclick="submitPipelineReview('${p.id}', ${reviewStepIndex}, 'skip')">Skip Step</button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Error recovery panel
+                let errorPanelHtml = '';
+                if (p.status === 'step_error') {
+                    const errorStep = p.steps.find(s => s.status === 'error');
+                    const errorStepIndex = errorStep ? p.steps.indexOf(errorStep) : -1;
+                    const agent = errorStep ? AGENT_DEFINITIONS.find(a => a.id === errorStep.agentId) : null;
+
+                    errorPanelHtml = `
+                        <div class="pipeline-error-panel">
+                            <div style="font-size:0.75rem;color:#f87171;font-weight:600;margin-bottom:0.25rem;">
+                                Step ${errorStepIndex + 1} failed (${agent?.name || 'Unknown'})
+                            </div>
+                            <pre style="font-size:0.6rem;color:#9ca3af;max-height:100px;overflow:auto;margin:0.25rem 0;white-space:pre-wrap;word-break:break-word;">${escapeHtml((errorStep?.output || '').substring(0, 1000))}</pre>
+                            <div style="font-size:0.65rem;color:#6b7280;margin-bottom:0.25rem;">Provide manual output to continue (override):</div>
+                            <textarea id="error-override-${p.id}" placeholder="Paste or type replacement output..."></textarea>
+                            <div class="pipeline-action-btns">
+                                <button class="btn" style="border-color:rgba(245,158,11,0.4);color:#fbbf24;" onclick="submitPipelineRetry('${p.id}', ${errorStepIndex}, 'retry')">Retry Step</button>
+                                <button class="btn btn-primary" onclick="submitPipelineRetry('${p.id}', ${errorStepIndex}, 'override')">Override & Continue</button>
+                                <button class="btn btn-danger" onclick="submitPipelineRetry('${p.id}', ${errorStepIndex}, 'abort')">Abort Pipeline</button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const progressColor = p.status === 'error' || p.status === 'step_error' ? '#ef4444' :
+                                       p.status === 'completed' ? '#4ade80' :
+                                       p.status === 'awaiting_review' ? '#f59e0b' : '#8b5cf6';
 
                 html += `
                     <div class="pipeline-card ${p.status}">
                         <div class="pipeline-header">
                             <span class="pipeline-name">${escapeHtml(p.name || 'Pipeline')}</span>
                             <span style="font-size:0.65rem;color:#9ca3af;">Step ${Math.min(completedSteps + 1, p.steps.length)}/${p.steps.length} · ${elapsed}</span>
-                            <span class="pipeline-badge ${p.status}">${p.status}</span>
+                            <span class="pipeline-badge ${p.status}">${statusLabels[p.status] || p.status}</span>
                         </div>
                         <div style="background:rgba(255,255,255,0.05);border-radius:4px;height:4px;margin:0.4rem 0;overflow:hidden;">
-                            <div style="height:100%;width:${progressPct}%;background:${p.status === 'error' ? '#ef4444' : p.status === 'completed' ? '#4ade80' : '#8b5cf6'};border-radius:4px;transition:width 0.5s;${isActive ? 'animation:pulse 1.5s infinite;' : ''}"></div>
+                            <div style="height:100%;width:${progressPct}%;background:${progressColor};border-radius:4px;transition:width 0.5s;${isActive ? 'animation:pulse 1.5s infinite;' : ''}"></div>
                         </div>
                         <div class="pipeline-steps">${stepsHtml}</div>
+                        ${reviewGateHtml}
+                        ${errorPanelHtml}
                     </div>
                 `;
             });
             container.innerHTML = html;
+        }
+
+        async function submitPipelineReview(pipelineId, stepIndex, action) {
+            const textarea = document.getElementById(`review-summary-${pipelineId}`);
+            const editedSummary = textarea ? textarea.value : undefined;
+
+            try {
+                const response = await fetch('http://localhost:8888/pipelines/review', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pipelineId, stepIndex, action, editedSummary })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('Review Submitted', action === 'approve' ? 'Continuing pipeline...' : 'Skipping step...', 'success');
+                } else {
+                    showToast('Review Error', result.error || 'Failed', 'error');
+                }
+            } catch (e) {
+                showToast('Connection Error', e.message, 'error');
+            }
+        }
+
+        async function submitPipelineRetry(pipelineId, stepIndex, action) {
+            let output = undefined;
+            if (action === 'override') {
+                const textarea = document.getElementById(`error-override-${pipelineId}`);
+                output = textarea ? textarea.value : '';
+                if (!output.trim()) {
+                    showToast('Override Error', 'Please enter replacement output', 'error');
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch('http://localhost:8888/pipelines/retry', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pipelineId, stepIndex, action, output })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    const msgs = { retry: 'Retrying step...', override: 'Continuing with override...', abort: 'Pipeline aborted' };
+                    showToast('Action Taken', msgs[action] || action, action === 'abort' ? 'error' : 'success');
+                } else {
+                    showToast('Error', result.error || 'Failed', 'error');
+                }
+            } catch (e) {
+                showToast('Connection Error', e.message, 'error');
+            }
         }
 
         // ─── Command Bar ─────────────────────────────────────────────────
@@ -3320,6 +3644,13 @@
 
             // Set goal text
             document.getElementById('approvalGoalText').textContent = plan.goal || '';
+
+            // Default review gates: ON for command bar goals, OFF for presets/custom
+            const reviewGatesEl = document.getElementById('approvalReviewGates');
+            if (reviewGatesEl) {
+                const isCommandGoal = plan.id && plan.id.startsWith('plan-');
+                reviewGatesEl.checked = plan.reviewGates !== undefined ? plan.reviewGates : isCommandGoal;
+            }
 
             // Strategy badge
             const strategyEl = document.getElementById('approvalStrategy');
@@ -3398,7 +3729,10 @@
                         pendingApprovalPlan.tasks[i].task = ta.value;
                     }
                 });
-                console.log('[APPROVAL] Submitting plan:', JSON.stringify(pendingApprovalPlan.tasks.map(t => ({ agent: t.agent, task: t.task.substring(0, 80) }))));
+                // Read review gates checkbox
+                const reviewGatesEl = document.getElementById('approvalReviewGates');
+                pendingApprovalPlan.reviewGates = reviewGatesEl ? reviewGatesEl.checked : false;
+                console.log('[APPROVAL] Submitting plan:', JSON.stringify(pendingApprovalPlan.tasks.map(t => ({ agent: t.agent, task: t.task.substring(0, 80) }))), 'reviewGates:', pendingApprovalPlan.reviewGates);
             }
 
             document.getElementById('approvalOverlay').classList.remove('visible');

@@ -105,9 +105,53 @@ Note: `runs.json` only tracks subagent runs (mostly Guido). Tasks dispatched via
 
 19. **Scheduled Tasks** — Cron-style scheduling via `POST /schedules`. Set agent, time (HH:MM), and task description. Checked every 30s, triggers `enqueueTask()` at the matching minute. Dashboard has Schedules panel with add form (agent selector, time picker, task input) and list of active schedules with delete buttons. Shows last run time.
 
+### Session 5 — North Star Gap Close (2026-02-22)
+
+20. **Review Gates Between Pipeline Steps** — Opt-in `reviewGates` flag on pipeline creation. After each non-final step completes and output is summarised, pipeline pauses with `awaiting_review` status using a Promise-based pause pattern. User sees an inline review panel in the pipeline card with:
+    - Editable textarea containing the summary (what gets passed to next step)
+    - Collapsible raw output section
+    - "Approve & Continue" (with optional edited summary) and "Skip Step" buttons
+    - Server endpoint: `POST /pipelines/review` accepts `{ pipelineId, stepIndex, action, editedSummary }`
+    - "Review between steps" checkbox added to approval modal (defaults ON for command bar goals, OFF for presets/custom)
+    - Applied to both `/agents/pipeline` and `/agents/command/approve` pipeline paths
+
+21. **Error Recovery (Retry / Override / Abort)** — When a pipeline step fails, instead of aborting immediately, pipeline enters `step_error` status and pauses with a Promise. User sees an error panel with:
+    - Error message and step output
+    - "Retry Step" — re-runs the failed step (`i--; continue` pattern)
+    - "Override & Continue" — user provides manual output text, step marked `completed` + `overridden: true`, pipeline continues with user text
+    - "Abort Pipeline" — kills the pipeline (explicit user choice)
+    - Server endpoint: `POST /pipelines/retry` accepts `{ pipelineId, stepIndex, action, output }`
+    - Applied to both pipeline execution paths
+
+22. **Dynamic Coordination Diagram** — `renderCommunicationDiagram()` now shows live pipeline flow when a pipeline is active:
+    - Only pipeline agents displayed (not all 4)
+    - Completed steps: green `✓` with solid `══▶` arrows
+    - Running steps: amber `◉` with animated arrows
+    - Summarising steps: blue `⟳`
+    - Awaiting review: amber `⏸ Review`
+    - Pending steps: grey `○` with dashed `───▶` arrows
+    - Error steps: red `✗`
+    - Falls back to static all-agents view when no pipeline is active
+    - Tracks `lastPipelines` from SSE activity data
+
+23. **New Pipeline States & CSS** — Added `awaiting_review` and `step_error` states to pipeline cards, badges, and step indicators. Review gate panel uses subtle amber border + box-shadow (no pulsing text). Error panel uses red border styling. Both have dedicated textarea styles for editing.
+
+### Tests Passed (2026-02-22)
+
+| # | Test | Result |
+|---|------|--------|
+| 1 | Preset pipeline with review gates checked — Newton completes, review gate appears, edit summary, approve | PASS |
+| 2 | Command bar pipeline — review gates default ON, gate appears between steps | PASS |
+| 3 | Review gate — click "Skip Step" — next agent receives empty context | PASS |
+| 4 | Error recovery — force timeout, override with manual text, next step receives override | PASS |
+| 5 | Error recovery — override failed step, verify overridden text flows to next step's `{{input}}` | PASS |
+| 6 | Error recovery — abort pipeline from step_error state, pipeline status → error | PASS |
+| 7 | Dynamic diagram — 3-step pipeline shows live state transitions (◉→⟳→✓) with arrow styles | PASS |
+| 8 | No review gates — pipeline with `reviewGates: false` runs straight through, never pauses | PASS |
+
 ---
 
-## Roadmap — ALL TIERS COMPLETE
+## Roadmap — ALL TIERS + NORTH STAR COMPLETE
 
 ### Tier 1 — COMPLETED
 - **Live Output Streaming** — Expandable terminal panel, smart auto-scroll, line count
@@ -124,6 +168,13 @@ Note: `runs.json` only tracks subagent runs (mostly Guido). Tasks dispatched via
 - **Performance Metrics** — Success rate, task count, avg duration, error count
 - **Telegram Notifications** — Bot API integration with test and config UI
 - **Task Queue & Scheduling** — Sequential queue per agent, cron-style schedules
+
+### North Star — COMPLETED
+- **Approval Modal** — User reviews and edits Astra's decomposition before dispatch
+- **Output Summarisation** — Structured handoff between pipeline steps via agent self-summary
+- **Review Gates** — Opt-in pause between pipeline steps, user can edit/approve/skip handoff summaries
+- **Error Recovery** — Failed steps pause for retry/override/abort instead of killing the pipeline
+- **Dynamic Coordination Diagram** — Live pipeline flow visualization with per-step status
 
 ### North Star Vision
 Open Mission Control, type "Build me a landing page for product X", and watch Astra break it down, Newton research competitors, Bronte write copy, and Guido build the page — all in real-time with live streaming output, agents handing off work to each other, with the user approving key decisions from the dashboard.
