@@ -108,6 +108,86 @@ function filterTerminalOutput(text) {
 let activePipelines = [];
 let pipelineIdCounter = 0;
 
+// ─── Persistence ────────────────────────────────────────────────────────
+const PERSIST_DIR = path.join(__dirname, '.mission-control');
+const SCHEDULES_FILE = path.join(PERSIST_DIR, 'schedules.json');
+const PIPELINES_FILE = path.join(PERSIST_DIR, 'pipelines.json');
+
+function ensurePersistDir() {
+    try { if (!fs.existsSync(PERSIST_DIR)) fs.mkdirSync(PERSIST_DIR, { recursive: true }); } catch {}
+}
+
+function saveSchedules() {
+    ensurePersistDir();
+    try {
+        fs.writeFileSync(SCHEDULES_FILE, JSON.stringify(scheduledTasks, null, 2));
+    } catch (e) {
+        console.log(`[PERSIST] Failed to save schedules: ${e.message}`);
+    }
+}
+
+function loadSchedules() {
+    try {
+        if (fs.existsSync(SCHEDULES_FILE)) {
+            const data = JSON.parse(fs.readFileSync(SCHEDULES_FILE, 'utf8'));
+            if (Array.isArray(data)) {
+                scheduledTasks = data;
+                scheduleIdCounter = data.reduce((max, s) => {
+                    const num = parseInt((s.id || '').replace('sched-', '')) || 0;
+                    return Math.max(max, num);
+                }, 0);
+                console.log(`[PERSIST] Loaded ${scheduledTasks.length} schedules`);
+            }
+        }
+    } catch (e) {
+        console.log(`[PERSIST] Failed to load schedules: ${e.message}`);
+    }
+}
+
+function savePipelines() {
+    ensurePersistDir();
+    try {
+        // Only persist completed pipelines with reports (strip functions/promises)
+        const toSave = activePipelines
+            .filter(p => p.status === 'completed' && p.report)
+            .slice(0, 20)
+            .map(p => ({
+                id: p.id, name: p.name, status: p.status,
+                startedAt: p.startedAt, endedAt: p.endedAt,
+                reviewGates: p.reviewGates,
+                steps: p.steps.map(s => ({
+                    agentId: s.agentId, task: s.task, taskTemplate: s.taskTemplate,
+                    status: s.status, output: (s.output || '').substring(0, 3000),
+                    summary: s.summary, handoff: s.handoff,
+                    startedAt: s.startedAt, endedAt: s.endedAt,
+                    overridden: s.overridden
+                })),
+                report: p.report
+            }));
+        fs.writeFileSync(PIPELINES_FILE, JSON.stringify(toSave, null, 2));
+    } catch (e) {
+        console.log(`[PERSIST] Failed to save pipelines: ${e.message}`);
+    }
+}
+
+function loadPipelines() {
+    try {
+        if (fs.existsSync(PIPELINES_FILE)) {
+            const data = JSON.parse(fs.readFileSync(PIPELINES_FILE, 'utf8'));
+            if (Array.isArray(data)) {
+                activePipelines = data;
+                pipelineIdCounter = data.reduce((max, p) => {
+                    const match = (p.id || '').match(/pipeline-(\d+)-/);
+                    return match ? Math.max(max, parseInt(match[1])) : max;
+                }, 0);
+                console.log(`[PERSIST] Loaded ${activePipelines.length} pipelines`);
+            }
+        }
+    } catch (e) {
+        console.log(`[PERSIST] Failed to load pipelines: ${e.message}`);
+    }
+}
+
 // ─── Per-agent model selection ──────────────────────────────────────────
 const OPENCLAW_CONFIG = path.join(process.env.HOME, '.openclaw/openclaw.json');
 
@@ -271,6 +351,7 @@ function checkSchedules() {
             if (lastRun && (now - lastRun) < 90000) continue;
 
             sched.lastRun = now.toISOString();
+            saveSchedules();
             console.log(`[SCHEDULE] Triggering: ${sched.agentId} - "${sched.task.substring(0, 60)}"`);
             enqueueTask(sched.agentId, sched.task);
         }
@@ -279,6 +360,10 @@ function checkSchedules() {
 
 // Check schedules every 30 seconds
 setInterval(checkSchedules, 30000);
+
+// Load persisted data on startup (after all variables are declared)
+loadSchedules();
+loadPipelines();
 
 // ─── Helpers ───────────────────────────────────────────────────────────
 
@@ -843,20 +928,122 @@ for (const agent of AGENTS) {
 
 // ─── Structured output summarisation for pipeline handoffs ──────────
 
+// Role-aware summarisation prompts for structured handoff
+const HANDOFF_PROMPTS = {
+    newton: `You just completed a research task. Summarise your findings as a JSON object with this exact structure (no markdown fences, just raw JSON):
+{
+  "summary": "Brief 2-3 sentence overview of what you found",
+  "key_findings": ["finding 1", "finding 2", "finding 3"],
+  "sources": ["source or reference 1", "source 2"],
+  "recommended_angle": "What the next person in the chain should focus on based on your research",
+  "confidence": "high or medium or low"
+}
+Be concise. Focus on the most important facts, conclusions, and actionable details.`,
+
+    bronte: `You just completed a writing/content task. Summarise your output as a JSON object with this exact structure (no markdown fences, just raw JSON):
+{
+  "summary": "Brief 2-3 sentence overview of what you produced",
+  "key_findings": ["key theme or point 1", "key theme 2", "key theme 3"],
+  "sources": [],
+  "recommended_angle": "What the next person should focus on — tone, audience, structure notes",
+  "confidence": "high or medium or low"
+}
+Be concise. Focus on the narrative structure, hooks, and target audience insights.`,
+
+    guido: `You just completed a coding task. Summarise your output as a JSON object with this exact structure (no markdown fences, just raw JSON):
+{
+  "summary": "Brief 2-3 sentence overview of what you built",
+  "key_findings": ["technical decision 1", "file or component created", "API pattern used"],
+  "sources": [],
+  "recommended_angle": "What the next person needs to know — dependencies, integration points, next steps",
+  "confidence": "high or medium or low"
+}
+Be concise. Focus on technical decisions, file paths, and dependencies.`,
+
+    default: `Summarise your key findings from the work you just completed as a JSON object with this exact structure (no markdown fences, just raw JSON):
+{
+  "summary": "Brief 2-3 sentence overview",
+  "key_findings": ["finding 1", "finding 2", "finding 3"],
+  "sources": [],
+  "recommended_angle": "What the next person should focus on",
+  "confidence": "high or medium or low"
+}
+Be concise and focus on actionable details.`
+};
+
+function parseHandoff(text) {
+    if (!text || text.trim().length === 0) {
+        return { summary: '', key_findings: [], sources: [], recommended_angle: '', confidence: 'medium' };
+    }
+
+    // Try to parse as JSON directly
+    try {
+        const parsed = JSON.parse(text.trim());
+        if (parsed.summary) return parsed;
+    } catch {}
+
+    // Try to extract JSON from markdown fences or surrounding text
+    const jsonMatch = text.match(/\{[\s\S]*?"summary"[\s\S]*?\}/);
+    if (jsonMatch) {
+        try {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed.summary) return parsed;
+        } catch {}
+    }
+
+    // Fallback: wrap raw text as unstructured handoff
+    return {
+        summary: text.substring(0, 500),
+        key_findings: [],
+        sources: [],
+        recommended_angle: '',
+        confidence: 'medium'
+    };
+}
+
+function formatHandoffForInjection(handoff, agentName) {
+    let formatted = `## Handoff from ${agentName}\n`;
+    formatted += `**Summary:** ${handoff.summary}\n`;
+    if (handoff.key_findings && handoff.key_findings.length > 0) {
+        formatted += `**Key Findings:**\n`;
+        handoff.key_findings.forEach(f => { formatted += `- ${f}\n`; });
+    }
+    if (handoff.recommended_angle) {
+        formatted += `**Recommended Angle:** ${handoff.recommended_angle}\n`;
+    }
+    if (handoff.sources && handoff.sources.length > 0) {
+        formatted += `**Sources:**\n`;
+        handoff.sources.forEach(s => { formatted += `- ${s}\n`; });
+    }
+    if (handoff.confidence) {
+        formatted += `**Confidence:** ${handoff.confidence}\n`;
+    }
+    return formatted;
+}
+
 async function summariseOutput(agentId, rawOutput) {
-    if (!rawOutput || rawOutput.trim().length === 0) return '';
+    if (!rawOutput || rawOutput.trim().length === 0) {
+        return { handoff: parseHandoff(''), raw: '', formatted: '' };
+    }
 
-    const summaryPrompt = `Summarise your key findings from the work you just completed in under 500 words. Focus on the most important facts, conclusions, and actionable details that the next person in the chain needs to know. Be concise and structured — use bullet points.`;
+    const basePrompt = HANDOFF_PROMPTS[agentId] || HANDOFF_PROMPTS.default;
+    const agentName = AGENTS.find(a => a.id === agentId)?.name || agentId;
 
-    console.log(`[SUMMARISE] Asking ${agentId} to summarise ${rawOutput.length} chars of output...`);
+    // Include raw output directly in the prompt so summarisation never relies on session memory
+    const truncatedOutput = rawOutput.substring(0, 4000);
+    const prompt = `Here is the raw output from the task you just completed:\n\n---\n${truncatedOutput}\n---\n\n${basePrompt}`;
+
+    console.log(`[SUMMARISE] Asking ${agentId} to summarise ${rawOutput.length} chars of output (${truncatedOutput.length} included in prompt)...`);
 
     try {
-        const result = await runAgentTask(agentId, summaryPrompt, { freshSession: false, timeoutMs: 60000 });
-        const summary = (result.stdout || '').trim();
+        const result = await runAgentTask(agentId, prompt, { freshSession: false, timeoutMs: 60000 });
+        const summaryText = (result.stdout || '').trim();
 
-        if (result.code === 0 && summary.length > 0) {
-            console.log(`[SUMMARISE] ${agentId}: got ${summary.length} char summary (from ${rawOutput.length} chars raw)`);
-            return summary;
+        if (result.code === 0 && summaryText.length > 0) {
+            const handoff = parseHandoff(summaryText);
+            const formatted = formatHandoffForInjection(handoff, agentName);
+            console.log(`[SUMMARISE] ${agentId}: got ${summaryText.length} char summary (from ${rawOutput.length} chars raw), structured: ${handoff.key_findings.length} findings`);
+            return { handoff, raw: summaryText, formatted };
         }
     } catch (e) {
         console.log(`[SUMMARISE] ${agentId}: summarisation failed: ${e.message}`);
@@ -864,7 +1051,91 @@ async function summariseOutput(agentId, rawOutput) {
 
     // Fallback: truncated raw output
     console.log(`[SUMMARISE] ${agentId}: falling back to truncated raw output (3000 chars)`);
-    return rawOutput.substring(0, 3000);
+    const fallbackText = rawOutput.substring(0, 3000);
+    const handoff = parseHandoff(fallbackText);
+    const formatted = formatHandoffForInjection(handoff, agentName);
+    return { handoff, raw: fallbackText, formatted };
+}
+
+// ─── Pipeline Report Generation ──────────────────────────────────────
+
+function generatePipelineReport(pipeline) {
+    const startMs = new Date(pipeline.startedAt).getTime();
+    const endMs = new Date(pipeline.endedAt).getTime();
+    const totalDuration = endMs - startMs;
+
+    const steps = pipeline.steps.map((step, i) => {
+        const agent = AGENTS.find(a => a.id === step.agentId);
+        const stepStartMs = step.startedAt ? new Date(step.startedAt).getTime() : startMs;
+        const stepEndMs = step.endedAt ? new Date(step.endedAt).getTime() : endMs;
+        const duration = stepEndMs - stepStartMs;
+
+        // Detect output files created during this step's window
+        const outputFiles = detectDeliverables(step.agentId, stepStartMs, stepEndMs);
+
+        return {
+            index: i,
+            agent: agent?.name || step.agentId,
+            agentId: step.agentId,
+            task: step.taskTemplate || step.task || '',
+            status: step.status,
+            duration,
+            handoff: step.handoff || null,
+            summary: step.summary || '',
+            output: (step.output || '').substring(0, 3000),
+            outputFiles,
+            overridden: step.overridden || false
+        };
+    });
+
+    // Deliverables = files from the final step (or all steps if final has none)
+    const finalStep = steps[steps.length - 1];
+    let deliverables = finalStep?.outputFiles || [];
+    if (deliverables.length === 0) {
+        // Fall back to all files from all steps
+        deliverables = steps.flatMap(s => s.outputFiles.map(f => ({ ...f, fromAgent: s.agent })));
+    }
+
+    return {
+        pipelineId: pipeline.id,
+        goal: pipeline.name,
+        status: pipeline.status,
+        totalDuration,
+        startedAt: pipeline.startedAt,
+        endedAt: pipeline.endedAt,
+        steps,
+        deliverables
+    };
+}
+
+function detectDeliverables(agentId, startMs, endMs) {
+    const agent = AGENTS.find(a => a.id === agentId);
+    if (!agent || agentId === 'main') return [];
+
+    try {
+        const files = fs.readdirSync(agent.workspace)
+            .filter(f => !f.startsWith('.') && !['AGENTS.md', 'BOOTSTRAP.md', 'HEARTBEAT.md', 'IDENTITY.md', 'SOUL.md', 'TOOLS.md', 'USER.md', 'MEMORY.md', 'CLAUDE.md'].includes(f));
+
+        return files
+            .map(f => {
+                const fullPath = path.join(agent.workspace, f);
+                try {
+                    const stat = fs.statSync(fullPath);
+                    if (!stat.isFile()) return null;
+                    return {
+                        name: f,
+                        path: fullPath,
+                        size: stat.size,
+                        modifiedMs: stat.mtimeMs,
+                        agent: agent.name
+                    };
+                } catch { return null; }
+            })
+            .filter(f => f && f.modifiedMs >= startMs - 2000 && f.modifiedMs <= endMs + 2000)
+            .sort((a, b) => b.modifiedMs - a.modifiedMs);
+    } catch {
+        return [];
+    }
 }
 
 // ─── HTTP Server ───────────────────────────────────────────────────────
@@ -1222,6 +1493,7 @@ const server = http.createServer(async (req, res) => {
                     lastRun: null
                 };
                 scheduledTasks.push(sched);
+                saveSchedules();
                 console.log(`[SCHEDULE] Created: ${sched.id} - ${agent.name} at ${sched.hour}:${String(sched.minute).padStart(2, '0')}`);
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: true, schedule: sched }));
@@ -1240,6 +1512,7 @@ const server = http.createServer(async (req, res) => {
             try {
                 const { id } = JSON.parse(body);
                 scheduledTasks = scheduledTasks.filter(s => s.id !== id);
+                saveSchedules();
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: true }));
             } catch (e) {
@@ -1440,6 +1713,7 @@ const server = http.createServer(async (req, res) => {
                     const step = pipeline.steps[i];
                     pipeline.currentStep = i;
                     step.status = 'running';
+                    step.startedAt = new Date().toISOString();
 
                     const agent = AGENTS.find(a => a.id === step.agentId);
                     console.log(`[PIPELINE] === Step ${i + 1}/${pipeline.steps.length} ===`);
@@ -1532,7 +1806,11 @@ const server = http.createServer(async (req, res) => {
                         delete pipeline._errorResolve;
 
                         if (errorAction.action === 'retry') {
-                            console.log(`[PIPELINE] Retrying step ${i + 1}...`);
+                            console.log(`[PIPELINE] Retrying step ${i + 1}${errorAction.editedTask ? ' with edited task' : ''}...`);
+                            if (errorAction.editedTask) {
+                                step.task = errorAction.editedTask;
+                                step.taskTemplate = errorAction.editedTask;
+                            }
                             step.status = 'running';
                             pipeline.status = 'running';
                             i--; // re-run this step
@@ -1556,16 +1834,17 @@ const server = http.createServer(async (req, res) => {
                     if (i < pipeline.steps.length - 1) {
                         step.status = 'summarising';
                         console.log(`[PIPELINE] Summarising step ${i + 1} output for handoff...`);
-                        const summary = await summariseOutput(step.agentId, previousOutput);
-                        step.summary = summary;
+                        const { handoff, raw, formatted } = await summariseOutput(step.agentId, previousOutput);
+                        step.summary = formatted;
+                        step.handoff = handoff;
                         step.status = 'completed';
-                        previousOutput = summary;
-                        console.log(`[PIPELINE] Step ${i + 1} summary ready (${summary.length} chars)`);
+                        previousOutput = formatted;
+                        console.log(`[PIPELINE] Step ${i + 1} summary ready (${formatted.length} chars, ${handoff.key_findings.length} findings)`);
 
                         // Update the result entry with summary data
                         const existingResult = completedResults.find(r => r.id === cliResultId);
                         if (existingResult) {
-                            existingResult.summary = summary.substring(0, 3000);
+                            existingResult.summary = formatted.substring(0, 3000);
                             existingResult.hasFullOutput = true;
                         }
 
@@ -1581,7 +1860,16 @@ const server = http.createServer(async (req, res) => {
                             delete pipeline._reviewResolve;
 
                             if (review.action === 'approve') {
-                                previousOutput = review.editedSummary || previousOutput;
+                                if (review.editedHandoff) {
+                                    // User edited structured fields — rebuild formatted output
+                                    step.handoff = review.editedHandoff;
+                                    const agentName = AGENTS.find(a => a.id === step.agentId)?.name || step.agentId;
+                                    previousOutput = formatHandoffForInjection(review.editedHandoff, agentName);
+                                } else if (review.editedSummary) {
+                                    previousOutput = review.editedSummary;
+                                } else {
+                                    // Use formatted handoff as-is
+                                }
                                 step.summary = previousOutput;
                             } else if (review.action === 'skip') {
                                 previousOutput = '';
@@ -1600,6 +1888,13 @@ const server = http.createServer(async (req, res) => {
                 }
                 pipeline.endedAt = new Date().toISOString();
                 console.log(`[PIPELINE] Pipeline finished: ${pipeline.status}`);
+
+                // Generate pipeline report
+                if (pipeline.status === 'completed') {
+                    pipeline.report = generatePipelineReport(pipeline);
+                    console.log(`[REPORT] Generated report for ${pipeline.id}: ${pipeline.report.deliverables.length} deliverables`);
+                    savePipelines();
+                }
 
             } catch (e) {
                 res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -1631,21 +1926,43 @@ const server = http.createServer(async (req, res) => {
                 };
 
                 // Ask Astra to decompose the goal into subtasks
-                const decompositionPrompt = `You are Astra, the CEO and Project Manager of Automa Dynamics. You have three agents:
-- Newton (researcher): fact-finding, synthesis, investigation, web research
-- Bronte (content writer): writing, editing, YouTube scripts, blog posts, documentation
-- Guido (coder): Python, TypeScript, debugging, building things
+                const decompositionPrompt = `You are Astra, the CEO and Project Manager of Automa Dynamics. You manage three specialist agents:
 
-A user wants: "${goal}"
+AGENTS:
+- Newton (researcher): fact-finding, synthesis, investigation, web research. Outputs: structured findings, source URLs, data, competitor analysis.
+- Bronte (content writer): blog posts, landing page copy, YouTube scripts, documentation, editing. Outputs: polished prose, headlines, CTAs, narrative structure.
+- Guido (coder): Python, TypeScript, HTML/CSS, debugging, building. Outputs: working code files, scripts, web pages, tools.
 
-Decompose this into agent tasks. Output ONLY valid JSON (no markdown, no explanation) in this exact format:
-{"tasks":[{"agent":"newton","task":"description"},{"agent":"bronte","task":"description"},{"agent":"guido","task":"description"}]}
+USER GOAL: "${goal}"
 
-Rules:
-- Only include agents that are actually needed (1-3 agents)
-- Tasks should be specific and actionable
-- If tasks should run in sequence (output of one feeds into the next), include "dependsOn" with the index of the dependency: {"agent":"bronte","task":"Write...","dependsOn":0}
-- Keep it practical — don't over-decompose`;
+Decompose this into 1-3 agent tasks. Each task MUST include:
+- "agent": which agent (newton/bronte/guido)
+- "task": a specific, actionable instruction
+- "expectedOutput": what this agent should produce (format, length, key elements)
+- "successCriteria": how we'll know this step succeeded
+- "handoffNote": what the NEXT agent needs from this step's output (omit for the final step)
+- "dependsOn": index of the task this depends on (omit for independent/first tasks)
+
+Output ONLY valid JSON (no markdown, no explanation):
+{"tasks":[{"agent":"newton","task":"...","expectedOutput":"...","successCriteria":"...","handoffNote":"...","dependsOn":0}]}
+
+EXAMPLES:
+
+Goal: "Build me a landing page for a productivity app"
+{"tasks":[{"agent":"newton","task":"Research the top 5 productivity apps (Notion, Todoist, Asana, ClickUp, Linear). For each, note: tagline, hero section approach, key features highlighted, pricing model, and CTA text. List 3 common patterns across all.","expectedOutput":"Structured comparison table with URLs, plus 3 common landing page patterns","successCriteria":"At least 5 competitors analysed with specific quotes/examples from their landing pages","handoffNote":"Bronte needs the competitor patterns and best tagline examples to write compelling copy","dependsOn":null},{"agent":"bronte","task":"Write landing page copy: hero headline + subheadline, 3 feature sections with headlines and 2-sentence descriptions, a social proof section placeholder, and a CTA section. Tone: confident but not pushy. Keep it under 400 words total.","expectedOutput":"Complete landing page copy in markdown sections, ready for a developer to implement","successCriteria":"All sections present, copy is specific (not generic), CTAs are actionable","handoffNote":"Guido needs the exact copy text and section structure to build the HTML page","dependsOn":0},{"agent":"guido","task":"Build a responsive HTML landing page using the copy provided. Use a modern design: dark gradient background, clean typography (system fonts), hero section with CTA button, feature grid, footer. Single file, no external dependencies.","expectedOutput":"A single index.html file with embedded CSS, mobile-responsive, production-ready","successCriteria":"Page renders correctly, all copy sections are present, responsive on mobile","dependsOn":1}]}
+
+Goal: "Write a blog post about quantum computing"
+{"tasks":[{"agent":"newton","task":"Research quantum computing for a general audience: explain qubits vs classical bits, list 3 real-world applications (with company names), note 2 recent breakthroughs (2024-2025), and identify the biggest current limitation.","expectedOutput":"Research brief with 4 sections, each with specific facts and source URLs","successCriteria":"All 4 sections have concrete facts (not vague), at least 3 source URLs included","handoffNote":"Bronte needs the specific facts, examples, and sources to write an engaging blog post","dependsOn":null},{"agent":"bronte","task":"Write a 600-800 word blog post about quantum computing for a general audience. Use a hook opening, explain concepts with analogies, include the specific examples and breakthroughs from research. End with a forward-looking conclusion. Conversational tone.","expectedOutput":"Complete blog post in markdown, 600-800 words, with a compelling title","successCriteria":"Post is engaging for non-technical readers, all research facts are woven in naturally, has a clear narrative arc","dependsOn":0}]}
+
+Goal: "Create a Python script that analyses CSV data"
+{"tasks":[{"agent":"guido","task":"Build a Python CLI tool that reads a CSV file, displays summary statistics (row count, column types, missing values per column), and generates a simple report. Use pandas. Include argparse for the file path argument and pretty-print the output.","expectedOutput":"A single Python file (csv_analyser.py) with CLI interface, error handling for missing/malformed files","successCriteria":"Script runs with 'python csv_analyser.py data.csv', handles edge cases, output is readable"}]}
+
+RULES:
+- Only include agents that are actually needed — don't force all three
+- Tasks must be specific enough that the agent can execute without asking questions
+- Each task should describe WHAT to produce, not just what to research
+- If tasks are sequential (most are), use dependsOn to chain them
+- Keep it practical — 1-3 tasks maximum, no over-decomposition`;
 
                 // Try Astra decomposition with a 60s timeout. If it fails/times out,
                 // fall back to heuristic immediately so the user always gets a plan.
@@ -1809,6 +2126,7 @@ Rules:
                             const step = pipeline.steps[i];
                             pipeline.currentStep = i;
                             step.status = 'running';
+                            step.startedAt = new Date().toISOString();
                             const agent = AGENTS.find(a => a.id === step.agentId);
 
                             let task = step.task;
@@ -1866,6 +2184,10 @@ Rules:
                                 delete pipeline._errorResolve;
 
                                 if (errorAction.action === 'retry') {
+                                    if (errorAction.editedTask) {
+                                        step.task = errorAction.editedTask;
+                                        step.taskTemplate = errorAction.editedTask;
+                                    }
                                     step.status = 'running';
                                     pipeline.status = 'running';
                                     i--;
@@ -1885,15 +2207,16 @@ Rules:
                             // Summarise output for next step (non-final steps only)
                             if (i < pipeline.steps.length - 1) {
                                 step.status = 'summarising';
-                                const summary = await summariseOutput(step.agentId, output);
-                                step.summary = summary;
+                                const { handoff, raw, formatted } = await summariseOutput(step.agentId, output);
+                                step.summary = formatted;
+                                step.handoff = handoff;
                                 step.status = 'completed';
-                                previousOutput = summary;
+                                previousOutput = formatted;
 
                                 // Update the result entry with summary data
                                 const existingResult = completedResults.find(r => r.id === cmdResultId);
                                 if (existingResult) {
-                                    existingResult.summary = summary.substring(0, 3000);
+                                    existingResult.summary = formatted.substring(0, 3000);
                                     existingResult.hasFullOutput = true;
                                 }
 
@@ -1909,7 +2232,13 @@ Rules:
                                     delete pipeline._reviewResolve;
 
                                     if (review.action === 'approve') {
-                                        previousOutput = review.editedSummary || previousOutput;
+                                        if (review.editedHandoff) {
+                                            step.handoff = review.editedHandoff;
+                                            const agentName = AGENTS.find(a => a.id === step.agentId)?.name || step.agentId;
+                                            previousOutput = formatHandoffForInjection(review.editedHandoff, agentName);
+                                        } else if (review.editedSummary) {
+                                            previousOutput = review.editedSummary;
+                                        }
                                         step.summary = previousOutput;
                                     } else if (review.action === 'skip') {
                                         previousOutput = '';
@@ -1921,6 +2250,13 @@ Rules:
                         }
                         if (pipeline.status !== 'error') pipeline.status = 'completed';
                         pipeline.endedAt = new Date().toISOString();
+
+                        // Generate pipeline report
+                        if (pipeline.status === 'completed') {
+                            pipeline.report = generatePipelineReport(pipeline);
+                            console.log(`[REPORT] Generated report for ${pipeline.id}: ${pipeline.report.deliverables.length} deliverables`);
+                    savePipelines();
+                        }
                     })();
 
                 } else {
@@ -1982,7 +2318,7 @@ Rules:
         req.on('data', chunk => { body += chunk.toString(); });
         req.on('end', () => {
             try {
-                const { pipelineId, stepIndex, action, editedSummary } = JSON.parse(body);
+                const { pipelineId, stepIndex, action, editedSummary, editedHandoff } = JSON.parse(body);
                 const pipeline = activePipelines.find(p => p.id === pipelineId);
                 if (!pipeline) {
                     res.writeHead(404);
@@ -1995,7 +2331,7 @@ Rules:
                     return;
                 }
                 console.log(`[REVIEW] Pipeline ${pipelineId} step ${stepIndex}: ${action}`);
-                pipeline._reviewResolve({ action, editedSummary });
+                pipeline._reviewResolve({ action, editedSummary, editedHandoff });
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: true }));
             } catch (e) {
@@ -2006,13 +2342,31 @@ Rules:
         return;
     }
 
+    // ─── Pipeline report endpoint ───────────────────────────────────────
+    if (req.url.startsWith('/pipelines/') && req.url.endsWith('/report') && req.method === 'GET') {
+        const pipelineId = req.url.replace('/pipelines/', '').replace('/report', '');
+        const pipeline = activePipelines.find(p => p.id === pipelineId);
+        if (!pipeline) {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Pipeline not found' }));
+            return;
+        }
+        if (!pipeline.report && pipeline.status === 'completed') {
+            // Generate report on-demand if it wasn't generated at completion
+            pipeline.report = generatePipelineReport(pipeline);
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(pipeline.report || { error: 'Pipeline not yet completed' }));
+        return;
+    }
+
     // ─── Pipeline error recovery endpoint ────────────────────────────────
     if (req.url === '/pipelines/retry' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => { body += chunk.toString(); });
         req.on('end', () => {
             try {
-                const { pipelineId, stepIndex, action, output } = JSON.parse(body);
+                const { pipelineId, stepIndex, action, output, editedTask } = JSON.parse(body);
                 const pipeline = activePipelines.find(p => p.id === pipelineId);
                 if (!pipeline) {
                     res.writeHead(404);
@@ -2024,8 +2378,8 @@ Rules:
                     res.end(JSON.stringify({ error: 'Pipeline is not in error state' }));
                     return;
                 }
-                console.log(`[RETRY] Pipeline ${pipelineId} step ${stepIndex}: ${action}`);
-                pipeline._errorResolve({ action, output });
+                console.log(`[RETRY] Pipeline ${pipelineId} step ${stepIndex}: ${action}${editedTask ? ' (edited task)' : ''}`);
+                pipeline._errorResolve({ action, output, editedTask });
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: true }));
             } catch (e) {

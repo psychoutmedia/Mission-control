@@ -1,0 +1,90 @@
+[
+  {
+    "id": "pipeline-1-1771761736236",
+    "name": "Reliability Test",
+    "status": "completed",
+    "startedAt": "2026-02-22T12:02:16.236Z",
+    "endedAt": "2026-02-22T12:03:41.175Z",
+    "reviewGates": false,
+    "steps": [
+      {
+        "agentId": "newton",
+        "task": "Name 3 planets. Just list them, nothing else.",
+        "taskTemplate": "Name 3 planets. Just list them, nothing else.",
+        "status": "completed",
+        "output": "Mercury, Venus, Jupiter\n",
+        "summary": "## Handoff from Newton\n**Summary:** Simple naming request - the user asked for 3 planets and I provided Mercury, Venus, and Jupiter.\n**Key Findings:**\n- Mercury is the smallest and innermost planet\n- Venus is the hottest planet in our solar system\n- Jupiter is the largest planet\n**Recommended Angle:** No further research needed - this was a basic naming request\n**Confidence:** high\n",
+        "handoff": {
+          "summary": "Simple naming request - the user asked for 3 planets and I provided Mercury, Venus, and Jupiter.",
+          "key_findings": [
+            "Mercury is the smallest and innermost planet",
+            "Venus is the hottest planet in our solar system",
+            "Jupiter is the largest planet"
+          ],
+          "sources": [],
+          "recommended_angle": "No further research needed - this was a basic naming request",
+          "confidence": "high"
+        },
+        "startedAt": "2026-02-22T12:02:16.237Z",
+        "endedAt": "2026-02-22T12:03:22.251Z"
+      },
+      {
+        "agentId": "bronte",
+        "task": "Write a haiku about: ## Handoff from Newton\n**Summary:** Simple naming request - the user asked for 3 planets and I provided Mercury, Venus, and Jupiter.\n**Key Findings:**\n- Mercury is the smallest and innermost planet\n- Venus is the hottest planet in our solar system\n- Jupiter is the largest planet\n**Recommended Angle:** No further research needed - this was a basic naming request\n**Confidence:** high\n",
+        "taskTemplate": "Write a haiku about: {{input}}",
+        "status": "completed",
+        "output": "Mercury small,\nVenus scorches, Jupiter rules—\nThree giants dance.\n",
+        "summary": null,
+        "startedAt": "2026-02-22T12:03:30.729Z",
+        "endedAt": "2026-02-22T12:03:41.175Z"
+      }
+    ],
+    "report": {
+      "pipelineId": "pipeline-1-1771761736236",
+      "goal": "Reliability Test",
+      "status": "completed",
+      "totalDuration": 84939,
+      "startedAt": "2026-02-22T12:02:16.236Z",
+      "endedAt": "2026-02-22T12:03:41.175Z",
+      "steps": [
+        {
+          "index": 0,
+          "agent": "Newton",
+          "agentId": "newton",
+          "task": "Name 3 planets. Just list them, nothing else.",
+          "status": "completed",
+          "duration": 66014,
+          "handoff": {
+            "summary": "Simple naming request - the user asked for 3 planets and I provided Mercury, Venus, and Jupiter.",
+            "key_findings": [
+              "Mercury is the smallest and innermost planet",
+              "Venus is the hottest planet in our solar system",
+              "Jupiter is the largest planet"
+            ],
+            "sources": [],
+            "recommended_angle": "No further research needed - this was a basic naming request",
+            "confidence": "high"
+          },
+          "summary": "## Handoff from Newton\n**Summary:** Simple naming request - the user asked for 3 planets and I provided Mercury, Venus, and Jupiter.\n**Key Findings:**\n- Mercury is the smallest and innermost planet\n- Venus is the hottest planet in our solar system\n- Jupiter is the largest planet\n**Recommended Angle:** No further research needed - this was a basic naming request\n**Confidence:** high\n",
+          "output": "Mercury, Venus, Jupiter\n",
+          "outputFiles": [],
+          "overridden": false
+        },
+        {
+          "index": 1,
+          "agent": "Bronte",
+          "agentId": "bronte",
+          "task": "Write a haiku about: {{input}}",
+          "status": "completed",
+          "duration": 10446,
+          "handoff": null,
+          "summary": "",
+          "output": "Mercury small,\nVenus scorches, Jupiter rules—\nThree giants dance.\n",
+          "outputFiles": [],
+          "overridden": false
+        }
+      ],
+      "deliverables": []
+    }
+  }
+]

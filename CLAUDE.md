@@ -171,7 +171,7 @@ Note: `runs.json` only tracks subagent runs (mostly Guido). Tasks dispatched via
 
 ### North Star — COMPLETED
 - **Approval Modal** — User reviews and edits Astra's decomposition before dispatch
-- **Output Summarisation** — Structured handoff between pipeline steps via agent self-summary
+- **Output Summarisation** — Structured JSON handoff between pipeline steps via role-aware prompts (key_findings, sources, recommended_angle, confidence)
 - **Review Gates** — Opt-in pause between pipeline steps, user can edit/approve/skip handoff summaries
 - **Error Recovery** — Failed steps pause for retry/override/abort instead of killing the pipeline
 - **Dynamic Coordination Diagram** — Live pipeline flow visualization with per-step status
@@ -179,123 +179,139 @@ Note: `runs.json` only tracks subagent runs (mostly Guido). Tasks dispatched via
 ### North Star Vision
 Open Mission Control, type "Build me a landing page for product X", and watch Astra break it down, Newton research competitors, Bronte write copy, and Guido build the page — all in real-time with live streaming output, agents handing off work to each other, with the user approving key decisions from the dashboard.
 
-### North Star Audit (2026-02-22) — 87% Complete
+### Session 6 — Structured Handoff Protocol (2026-02-22)
 
-Infrastructure is essentially solved (pipeline execution 98%, user approval 95%, SSE 95%). The remaining 13% splits into polish gaps (syntax highlighting, notification click handlers, diagram labels) that don't change capability, and genuine capability gaps that would lift output quality. The two priorities below target the intelligence layer — prompt engineering and data structures, not plumbing.
+24. **Structured Handoff Format** — Complete rewrite of `summariseOutput()` to use role-aware JSON handoff protocol:
+    - Per-agent summarisation prompts (`HANDOFF_PROMPTS`): Newton emphasises findings/sources/evidence, Bronte emphasises themes/hooks/audience, Guido emphasises tech decisions/file paths/dependencies
+    - JSON handoff schema: `{ summary, key_findings[], sources[], recommended_angle, confidence }`
+    - `parseHandoff()` — parses agent response as JSON with regex fallback for fenced code, graceful degradation to `{ summary: <raw text> }`
+    - `formatHandoffForInjection()` — converts handoff JSON to readable markdown for next agent's `{{input}}` injection: `## Handoff from Newton` with structured fields
+    - Both pipeline loops updated to use `{ handoff, raw, formatted }` return value
+    - `step.handoff` stores the structured object for frontend rendering
+    - Review gate enhanced: when structured handoff exists, shows editable fields (summary input, key findings list with add/remove, recommended angle, sources, confidence badge) instead of plain textarea
+    - `submitPipelineReview()` collects `editedHandoff` from structured fields, sends to server, which rebuilds formatted injection from edited fields
+    - `addHandoffFinding()` helper for dynamic finding list editing
+    - Falls back to plain textarea when handoff is unstructured (no key_findings)
+    - Review endpoint updated to accept `editedHandoff` alongside `editedSummary`
 
----
+25. **Consolidated Pipeline Report View** — Full report panel for completed pipelines:
+    - `generatePipelineReport()` — builds report object on pipeline completion with per-step durations, structured handoffs, output files, and deliverables
+    - `detectDeliverables()` — scans agent workspace for files modified during step's time window (±2s tolerance)
+    - `step.startedAt` timestamp added to both pipeline loops for accurate per-step duration tracking
+    - `GET /pipelines/:id/report` endpoint — returns full report JSON, generates on-demand if not cached
+    - **Report UI**: "View Report" button on completed pipeline cards, toggleable report panel with:
+      - Header with goal name and total duration
+      - Handoff chain visualization (purple nodes showing agent → agent flow with finding counts)
+      - Vertical step timeline with green dot markers, per-step duration bars, task descriptions
+      - Structured handoff display per step (summary, findings, recommended angle)
+      - Collapsible raw output per step
+      - Auto-detected output files per step with file size
+      - Deliverables section (final step files or all step files as fallback)
+    - CSS: `.pipeline-report`, `.report-timeline`, `.report-step`, `.report-handoff`, `.report-deliverable`, `.report-handoff-chain`, `.report-chain-flow`
 
-## Roadmap — Next Session (2026-02-23)
+26. **Polish: Confidence Selector** — Review gate confidence field changed from static badge to `<select>` dropdown (high/medium/low). Value read by `submitPipelineReview()` and included in `editedHandoff.confidence`. CSS: `.handoff-confidence-select`.
 
-### Priority 1: Structured Handoff Format (currently 78%)
+27. **Polish: Source URL Auto-Linking** — `autoLinkUrls()` helper detects `http://` and `https://` URLs in text and wraps them in clickable `<a>` tags. Applied to report handoff sources. Sources section added to report handoff display with 🔗 styling.
 
-**The problem:** `summariseOutput()` produces raw prose. Newton returns a text blob, Bronte has to interpret it. Context is lost, emphasis is flattened, sources disappear. The pipes are solid but the data flowing through them is unstructured.
+28. **Polish: Deliverable Preview & File Browser Links** — Report deliverables now have:
+    - "Open in Files" button — calls `openAgentFileBrowser()` which opens the agent's file browser panel and scrolls to the card
+    - "Preview" button — calls `toggleDeliverablePreview()` which fetches file preview from `/agents/files/` endpoint and shows inline
+    - Per-step output files in report also get "Open in Files" button
+    - CSS: `.report-file-btn`, `.deliverable-preview`
 
-**The fix: structured JSON handoff protocol**
+### Tests Passed (Session 6)
 
-Replace the generic summarisation prompt with an agent-role-aware prompt that returns JSON:
+| # | Test | Result |
+|---|------|--------|
+| 1 | Newton → Bronte with review gates — structured handoff with findings, high confidence | PASS |
+| 2 | Approve structured review gate — Bronte references specific handoff findings | PASS |
+| 3 | Newton → Bronte without review gates — structured handoff flows automatically | PASS |
+| 4 | Newton → Bronte → Guido 3-step pipeline — report shows 3 steps, per-step durations, structured handoffs | PASS |
+| 5 | Deliverable auto-detection — `black_hole_poem.py` detected from Guido's step window | PASS |
+| 6 | Report with review gates — 2-step pipeline report generated after review gate approval | PASS |
+| 7 | Report endpoint 404 — returns 404 for unknown pipeline ID | PASS |
+| 8 | Full polish test (JWST pipeline) — sources with NASA/ESA URLs, confidence dropdown, deliverable preview of `jwst_blog_post.py` | PASS |
 
-```json
-{
-  "summary": "Brief 2-3 sentence overview",
-  "key_findings": ["fact 1", "fact 2", "fact 3"],
-  "sources": ["url or reference"],
-  "recommended_angle": "What the next agent should focus on",
-  "raw_data": { "any structured data relevant to the task" },
-  "blockers": ["anything that couldn't be resolved"],
-  "confidence": "high|medium|low"
-}
-```
+### Session 7 — Intelligence & Reliability (2026-02-22)
 
-**Implementation steps:**
+29. **Enhanced Astra Decomposition** — Complete rewrite of Astra's goal decomposition prompt:
+    - Three few-shot examples (landing page, blog post, Python script) showing ideal decomposition
+    - Each task now includes `expectedOutput`, `successCriteria`, and `handoffNote` fields
+    - Agent descriptions expanded with specific output types (Newton: findings/URLs, Bronte: prose/CTAs, Guido: code files)
+    - Approval modal shows metadata below each step (expected output, success criteria, handoff note) with purple accent styling
+    - CSS: `.approval-step-meta`, `.approval-meta-row`, `.approval-meta-label`
 
-1. **Role-aware summarisation prompts** — Replace the single generic prompt in `summariseOutput()` with per-agent prompts:
-   - Newton: emphasise findings, sources, evidence quality, recommended angles
-   - Bronte: emphasise key themes, hooks, narrative structure, target audience insights
-   - Guido: emphasise technical decisions, file paths, dependencies, API patterns
-   - Each prompt requests the JSON schema above
+30. **Summarisation Reliability Fix** — `summariseOutput()` now includes raw output directly in the summarisation prompt:
+    - Truncated to 4000 chars and prepended: `"Here is the raw output...\n---\n{output}\n---\n{role-aware prompt}"`
+    - Eliminates silent failure mode where session memory loss produced empty handoffs
+    - Server log now shows chars included: `"Asking newton to summarise 24 chars of output (24 included in prompt)"`
 
-2. **JSON parsing with fallback** — Parse the agent's response as JSON. If it fails (agent returned prose), wrap it in `{ summary: <raw text>, key_findings: [] }` so the pipeline never breaks.
+31. **Persistence** — Schedules and completed pipeline reports now survive server restarts:
+    - `.mission-control/` directory created at project root
+    - `schedules.json` — written on create, delete, and lastRun update
+    - `pipelines.json` — written on pipeline completion (completed pipelines with reports, max 20, stripped of functions/promises)
+    - `loadSchedules()` and `loadPipelines()` called on startup, restoring IDs and counter state
+    - Server logs: `[PERSIST] Loaded N schedules`, `[PERSIST] Loaded N pipelines`
 
-3. **Structured context injection** — When injecting into next step's `{{input}}`, format the JSON into a readable prompt section:
-   ```
-   ## Handoff from Newton
-   **Summary:** ...
-   **Key Findings:**
-   - ...
-   **Recommended Angle:** ...
-   **Sources:** ...
-   ```
-   This gives the next agent structured context without requiring it to parse JSON itself.
+32. **Result Card Overflow Fix** — Long URLs in summary handoff text no longer break outside result cards:
+    - Added `word-break: break-word; overflow-wrap: break-word` to summary div
+    - Added `overflow: hidden` to `.result-card`
 
-4. **Review gate enhancement** — Show the structured fields in the review gate UI instead of a raw textarea. User can edit individual fields (findings, angle, etc.) rather than rewriting prose. Display sources as links.
+### Tests Passed (Session 7)
 
-5. **Store structured handoff on step object** — `step.handoff = { ... }` alongside `step.summary` for backward compatibility. Frontend can render either.
+| # | Test | Result |
+|---|------|--------|
+| 1 | Decomposition: "Build landing page for CodeLens" → 3 steps with expectedOutput, successCriteria, handoffNote per step | PASS |
+| 2 | Decomposition: Newton names specific competitors (CodeRabbit, Codeball, etc.), not generic "research" | PASS |
+| 3 | Summarisation: raw output (24 chars) included in prompt, 3 structured findings returned | PASS |
+| 4 | Schedule persistence: create → restart → schedule loads from disk | PASS |
+| 5 | Pipeline persistence: complete → restart → report accessible via GET endpoint | PASS |
 
-**Files to modify:**
-- `mission-control-server.js` — `summariseOutput()` rewrite, context injection in pipeline loops
-- `mission-control.html` — review gate panel to render structured fields
+### North Star Audit — 88% → ~94%
 
-**Success criteria:** Run a Newton → Bronte pipeline. Newton's handoff should contain structured findings with sources. Bronte's output should demonstrably reference specific findings rather than interpreting a text blob.
-
----
-
-### Priority 2: Consolidated Pipeline Output View (currently unrated, significant gap)
-
-**The problem:** When a pipeline completes, results are scattered — each step appears as a separate card in Agent Results, output files live in different agent workspaces, and there's no single view of "here's what the pipeline produced." The user has to mentally assemble the deliverable.
-
-**The fix: Pipeline Report panel**
-
-**Implementation steps:**
-
-1. **Collect pipeline outputs server-side** — When a pipeline completes, build a report object:
-   ```json
-   {
-     "pipelineId": "...",
-     "goal": "Build me a landing page",
-     "status": "completed",
-     "totalDuration": 245000,
-     "steps": [
-       {
-         "agent": "Newton",
-         "task": "Research competitors...",
-         "status": "completed",
-         "duration": 85000,
-         "handoff": { "summary": "...", "key_findings": [...] },
-         "outputFiles": ["research-notes.md"]
-       },
-       ...
-     ],
-     "deliverables": [
-       { "agent": "Guido", "file": "index.html", "path": "/Users/.../agents/guido/index.html", "size": 4200 }
-     ]
-   }
-   ```
-   Store in `pipeline.report` when pipeline completes.
-
-2. **New endpoint: `GET /pipelines/:id/report`** — Returns the full report JSON for a completed pipeline.
-
-3. **Pipeline Report UI** — New expandable section in the pipeline card (or a modal triggered by "View Report" button on completed pipelines):
-   - **Header:** Goal, total duration, status
-   - **Step timeline:** Vertical timeline showing each agent's contribution with duration bars
-   - **Per-step cards:** Agent avatar, task, handoff summary (structured if available), output files with preview links
-   - **Deliverables section:** Files produced by the final step, with inline preview and "Open in File Browser" link
-   - **Handoff chain visualization:** Show how context flowed: Newton's findings → Bronte's angle → Guido's implementation
-
-4. **Detect deliverables automatically** — After final step completes, scan the agent's workspace for files modified during the pipeline window (compare `modifiedMs` against `pipeline.startedAt`). These are the deliverables.
-
-5. **Link to File Browser** — Each deliverable links to the agent's file browser panel, auto-scrolled to the relevant file. Clicking previews inline.
-
-**Files to modify:**
-- `mission-control-server.js` — report generation on pipeline completion, new GET endpoint, deliverable detection
-- `mission-control.html` — Pipeline Report panel/modal, timeline rendering, deliverable preview
-
-**Success criteria:** Run a full Newton → Bronte → Guido pipeline. On completion, click "View Report" and see: what was researched, what was written, what was built, with file links and structured summaries for each step.
+- **Decomposition: 82% → 93%** — Few-shot examples, output format specs, success criteria, handoff notes. Remaining: could add estimated complexity, more examples
+- **Structured Handoff: 88% → 95%** — Raw output now passed directly into summarisation prompt, eliminating session memory dependency
+- **Persistence: 0% → 90%** — Schedules and pipeline reports survive restarts. Remaining: task queue persistence, kanban board backup
+- **UI/UX: 89% → 91%** — Result card overflow fixed
 
 ---
 
-### Stretch Goals (if time permits)
+### Session 8 — Audit Polish (2026-02-22)
 
-- **Smarter Astra decomposition** — Enhance the decomposition prompt to include: expected output format per task, success criteria, estimated complexity, explicit instructions for what each agent should hand off
-- **Edit & Retry** — When a step fails and user clicks retry, show an editable textarea with the original task so they can tweak parameters before re-running
-- **Add steps in approval modal** — Let users add new steps (not just remove) during plan review, with agent selector dropdown
+33. **Edit & Retry** — Error recovery now includes an editable task textarea:
+    - Server: `/pipelines/retry` accepts `editedTask` field, both pipeline retry blocks apply it to `step.task` and `step.taskTemplate` before re-running
+    - Frontend: Error panel shows pre-filled textarea with original task text, user can edit before clicking "Retry Step"
+    - `submitPipelineRetry()` reads `error-task-{id}` textarea and sends `editedTask` in POST body
+
+34. **Add Step in Approval Modal** — Users can now add new steps during plan review:
+    - "+ Add Step" button below step list (dashed purple border, full width)
+    - New steps default to a different agent than the last step
+    - Each step now has an agent selector dropdown (replaces static agent name)
+    - `changeApprovalAgent()` updates agent and re-renders with correct avatar/color
+    - Sequential pipelines auto-set `dependsOn` for new steps
+
+35. **Diagram Arrow Labels** — Dynamic coordination diagram now shows handoff context on arrows:
+    - When a step completes and has a handoff, the arrow displays a truncated excerpt (40 chars) of the recommended angle or summary
+    - CSS: `.comm-arrow-label` with small text, centered below arrow, ellipsis overflow
+    - `.comm-flow-arrow` changed to `flex-direction: column` to stack arrow + label
+
+36. **Report Chain Excerpts** — Pipeline report handoff chain nodes enhanced:
+    - Each node shows finding count ("3 findings") in blue
+    - Non-final steps show truncated recommended angle/summary (50 chars) below agent name
+    - Nodes use `display: inline-flex; flex-direction: column` for stacked layout
+    - Title attribute shows full excerpt on hover
+
+### North Star Audit — ~94% → ~97%
+
+All audit stretch goals implemented:
+- Edit & Retry: users can tweak failed tasks before retrying
+- Add Step: approval modal supports adding new pipeline steps with agent selection
+- Diagram labels: arrows show handoff context between agents
+- Report excerpts: chain visualization shows key findings and angles
+
+## Roadmap — Remaining Polish
+
+- **Syntax highlighting** — Code blocks in terminal output and result cards
+- **Notification click handlers** — Click browser notifications to scroll to relevant result
+- **Task queue persistence** — Save queued tasks to disk
+- **Estimated complexity** — Add complexity rating to decomposition metadata

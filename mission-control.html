@@ -971,6 +971,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 0.5rem;
             padding: 1rem;
+            overflow: hidden;
         }
 
         .result-card.completed {
@@ -1412,6 +1413,25 @@
             border-color: #8b5cf6;
         }
 
+        .approval-step-meta {
+            margin-top: 0.35rem;
+            padding: 0.35rem 0.5rem;
+            background: rgba(139, 92, 246, 0.05);
+            border-left: 2px solid rgba(139, 92, 246, 0.3);
+            border-radius: 0 0.25rem 0.25rem 0;
+        }
+        .approval-meta-row {
+            font-size: 0.65rem;
+            color: #9ca3af;
+            line-height: 1.4;
+            margin-bottom: 0.15rem;
+        }
+        .approval-meta-row:last-child { margin-bottom: 0; }
+        .approval-meta-label {
+            color: #a78bfa;
+            font-weight: 600;
+        }
+
         .approval-arrow {
             text-align: center;
             color: #4b5563;
@@ -1847,6 +1867,85 @@
             border-color: #f59e0b;
         }
 
+        .pipeline-review-gate input[type="text"] {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #374151;
+            color: #e5e7eb;
+            padding: 0.35rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.7rem;
+            margin: 0.15rem 0;
+        }
+        .pipeline-review-gate input[type="text"]:focus {
+            outline: none;
+            border-color: #f59e0b;
+        }
+
+        .handoff-field-label {
+            font-size: 0.65rem;
+            color: #9ca3af;
+            font-weight: 600;
+            margin-top: 0.4rem;
+            margin-bottom: 0.1rem;
+        }
+
+        .handoff-findings-list {
+            list-style: none;
+            padding: 0;
+            margin: 0.15rem 0;
+        }
+        .handoff-findings-list li {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            margin-bottom: 0.15rem;
+        }
+        .handoff-findings-list input {
+            flex: 1;
+        }
+        .handoff-findings-list button {
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            font-size: 0.7rem;
+            padding: 0 0.25rem;
+        }
+        .handoff-findings-list button:hover { color: #f87171; }
+
+        .handoff-add-finding {
+            font-size: 0.6rem;
+            color: #6b7280;
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 0.15rem 0;
+        }
+        .handoff-add-finding:hover { color: #fbbf24; }
+
+        .handoff-confidence {
+            display: inline-block;
+            font-size: 0.6rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 0.25rem;
+            margin-top: 0.1rem;
+        }
+        .handoff-confidence.high { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+        .handoff-confidence.medium { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+        .handoff-confidence.low { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+
+        .handoff-confidence-select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #374151;
+            color: #e5e7eb;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-size: 0.6rem;
+            cursor: pointer;
+        }
+        .handoff-confidence-select:focus { outline: none; border-color: #f59e0b; }
+
         .pipeline-error-panel {
             margin: 0.75rem 0;
             padding: 0.75rem;
@@ -1885,13 +1984,187 @@
             padding: 0.3rem 0.7rem;
         }
 
+        /* Pipeline Report */
+        .pipeline-report {
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background: rgba(74, 222, 128, 0.03);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 0.5rem;
+        }
+        .report-header {
+            font-size: 0.75rem;
+            color: #e5e7eb;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .report-timeline {
+            position: relative;
+            padding-left: 1.5rem;
+        }
+        .report-timeline::before {
+            content: '';
+            position: absolute;
+            left: 0.45rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .report-step {
+            position: relative;
+            margin-bottom: 0.75rem;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 0.375rem;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .report-step::before {
+            content: '';
+            position: absolute;
+            left: -1.3rem;
+            top: 0.65rem;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+            border: 2px solid rgba(0,0,0,0.3);
+        }
+        .report-step.overridden::before { background: #f59e0b; }
+        .report-step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.25rem;
+        }
+        .report-step-agent {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+        .report-step-duration {
+            font-size: 0.6rem;
+            color: #6b7280;
+        }
+        .report-step-task {
+            font-size: 0.6rem;
+            color: #9ca3af;
+            margin-bottom: 0.25rem;
+        }
+        .report-handoff {
+            font-size: 0.6rem;
+            color: #d1d5db;
+            padding: 0.3rem 0.5rem;
+            background: rgba(255,255,255,0.03);
+            border-left: 2px solid rgba(74, 222, 128, 0.3);
+            margin-top: 0.25rem;
+        }
+        .report-handoff-label {
+            color: #4ade80;
+            font-weight: 600;
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.15rem;
+        }
+        .report-deliverables {
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .report-deliverable {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.25rem 0.4rem;
+            font-size: 0.65rem;
+            color: #d1d5db;
+            background: rgba(255,255,255,0.03);
+            border-radius: 0.25rem;
+            margin-bottom: 0.2rem;
+        }
+        .report-deliverable-size {
+            color: #6b7280;
+            font-size: 0.55rem;
+        }
+        .report-handoff-chain {
+            margin-top: 0.5rem;
+            padding: 0.4rem;
+            background: rgba(139, 92, 246, 0.05);
+            border-radius: 0.375rem;
+            border: 1px solid rgba(139, 92, 246, 0.15);
+        }
+        .report-chain-flow {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+            font-size: 0.6rem;
+        }
+        .report-chain-node {
+            padding: 0.15rem 0.4rem;
+            background: rgba(139, 92, 246, 0.15);
+            border-radius: 0.25rem;
+            color: #c4b5fd;
+        }
+        .report-chain-arrow {
+            color: #6b7280;
+        }
+        .report-file-btn {
+            font-size: 0.5rem;
+            color: #60a5fa;
+            background: none;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            border-radius: 0.2rem;
+            padding: 0.1rem 0.3rem;
+            cursor: pointer;
+            margin-left: auto;
+        }
+        .report-file-btn:hover {
+            background: rgba(96, 165, 250, 0.1);
+            border-color: rgba(96, 165, 250, 0.5);
+        }
+        .deliverable-preview {
+            margin: 0.2rem 0 0.4rem;
+            padding: 0.4rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 0.25rem;
+            max-height: 200px;
+            overflow: auto;
+        }
+        .deliverable-preview pre {
+            font-size: 0.6rem;
+            color: #d1d5db;
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
         /* Dynamic coordination diagram */
         .comm-flow-arrow {
             display: flex;
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
             font-size: 1.2rem;
             color: #4b5563;
             position: relative;
+        }
+
+        .comm-arrow-label {
+            font-size: 0.45rem;
+            color: #9ca3af;
+            max-width: 90px;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-top: 0.1rem;
+            line-height: 1.1;
         }
 
         .comm-flow-arrow.completed {
@@ -2067,7 +2340,7 @@
         <header>
             <div class="logo">
                 <img class="logo-icon" src="logo.png" alt="Automa Dynamics">
-                <span class="logo-text">Automa Dynamics  -  Mission Control<span class="logo-sub">Mission Control</span></span>
+                <span class="logo-text">Automa Dynamics<span class="logo-sub">Mission Control</span></span>
             </div>
             <div style="display: flex; gap: 1rem; align-items: center;">
                 <button class="btn" onclick="refreshCurrentTab()">Refresh</button>
@@ -2386,6 +2659,7 @@
             <div class="approval-goal-text" id="approvalGoalText"></div>
             <div class="approval-strategy" id="approvalStrategy"></div>
             <div id="approvalSteps"></div>
+            <button class="btn" onclick="addApprovalStep()" style="margin:0.5rem 0;font-size:0.7rem;padding:0.3rem 0.75rem;border:1px dashed rgba(139,92,246,0.4);color:#a78bfa;background:transparent;width:100%;">+ Add Step</button>
             <div style="margin:0.75rem 0;padding:0.5rem 0.75rem;background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.2);border-radius:0.375rem;">
                 <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.8rem;color:#fbbf24;">
                     <input type="checkbox" id="approvalReviewGates"> Review between steps
@@ -2836,7 +3110,7 @@
                 const summaryHtml = r.summary
                     ? `<div style="margin-top:0.5rem;padding:0.5rem;background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.15);border-radius:0.4rem;">
                         <div style="font-size:0.65rem;color:#93c5fd;font-weight:600;margin-bottom:0.25rem;">Summary (used for handoff)</div>
-                        <div style="font-size:0.75rem;color:#d1d5db;white-space:pre-wrap;line-height:1.4;">${escapeHtml(r.summary)}</div>
+                        <div style="font-size:0.75rem;color:#d1d5db;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;line-height:1.4;">${escapeHtml(r.summary)}</div>
                        </div>`
                     : '';
 
@@ -2887,6 +3161,14 @@
             const div = document.createElement('div');
             div.textContent = str;
             return div.innerHTML;
+        }
+
+        function autoLinkUrls(text) {
+            const escaped = escapeHtml(text);
+            return escaped.replace(
+                /(https?:\/\/[^\s<>"']+)/gi,
+                '<a href="$1" target="_blank" rel="noopener" style="color:#60a5fa;text-decoration:underline;">$1</a>'
+            );
         }
 
         // Track communications between agents
@@ -2948,7 +3230,18 @@
                                            prevStep.status === 'running' || prevStep.status === 'summarising' ? 'comm-flow-arrow running' :
                                            'comm-flow-arrow';
 
-                        diagramHtml += `<div class="${arrowClass}"><span>${prevDone ? '══▶' : '───▶'}</span></div>`;
+                        // Arrow label: show short excerpt of handoff when previous step is done
+                        let arrowLabel = '';
+                        if (prevDone && prevStep.handoff) {
+                            const h = prevStep.handoff;
+                            const snippet = h.recommended_angle || h.summary || '';
+                            if (snippet) {
+                                const truncated = snippet.length > 40 ? snippet.substring(0, 40) + '…' : snippet;
+                                arrowLabel = `<div class="comm-arrow-label">${escapeHtml(truncated)}</div>`;
+                            }
+                        }
+
+                        diagramHtml += `<div class="${arrowClass}"><span>${prevDone ? '══▶' : '───▶'}</span>${arrowLabel}</div>`;
                     }
 
                     diagramHtml += `
@@ -3451,17 +3744,62 @@
                 if (p.status === 'awaiting_review') {
                     const reviewStep = p.steps.find(s => s.status === 'awaiting_review');
                     const reviewStepIndex = reviewStep ? p.steps.indexOf(reviewStep) : -1;
+                    const handoff = reviewStep?.handoff;
+                    const hasStructured = handoff && handoff.key_findings && handoff.key_findings.length > 0;
                     const summaryText = reviewStep?.summary || reviewStep?.output || '';
                     const agent = reviewStep ? AGENT_DEFINITIONS.find(a => a.id === reviewStep.agentId) : null;
 
+                    let reviewBodyHtml = '';
+                    if (hasStructured) {
+                        // Structured handoff UI — editable fields
+                        const findingsHtml = handoff.key_findings.map((f, fi) =>
+                            `<li><span style="color:#6b7280;">•</span> <input type="text" class="review-finding-${p.id}" value="${escapeHtml(f)}" /><button onclick="this.parentElement.remove()">✕</button></li>`
+                        ).join('');
+                        const sourcesHtml = (handoff.sources || []).map((s, si) =>
+                            `<li><span style="color:#6b7280;">•</span> <input type="text" class="review-source-${p.id}" value="${escapeHtml(s)}" /><button onclick="this.parentElement.remove()">✕</button></li>`
+                        ).join('');
+
+                        reviewBodyHtml = `
+                            <div class="handoff-field-label">Summary</div>
+                            <input type="text" id="review-handoff-summary-${p.id}" value="${escapeHtml(handoff.summary || '')}" />
+
+                            <div class="handoff-field-label">Key Findings</div>
+                            <ul class="handoff-findings-list" id="review-findings-${p.id}">
+                                ${findingsHtml}
+                            </ul>
+                            <button class="handoff-add-finding" onclick="addHandoffFinding('${p.id}')">+ Add finding</button>
+
+                            <div class="handoff-field-label">Recommended Angle</div>
+                            <input type="text" id="review-handoff-angle-${p.id}" value="${escapeHtml(handoff.recommended_angle || '')}" />
+
+                            ${(handoff.sources && handoff.sources.length > 0) ? `
+                            <div class="handoff-field-label">Sources</div>
+                            <ul class="handoff-findings-list" id="review-sources-${p.id}">
+                                ${sourcesHtml}
+                            </ul>` : ''}
+
+                            <div class="handoff-field-label">Confidence</div>
+                            <select id="review-handoff-confidence-${p.id}" class="handoff-confidence-select">
+                                <option value="high" ${(handoff.confidence || 'medium') === 'high' ? 'selected' : ''}>high</option>
+                                <option value="medium" ${(handoff.confidence || 'medium') === 'medium' ? 'selected' : ''}>medium</option>
+                                <option value="low" ${(handoff.confidence || 'medium') === 'low' ? 'selected' : ''}>low</option>
+                            </select>
+                        `;
+                    } else {
+                        // Fallback: plain textarea (unstructured summary)
+                        reviewBodyHtml = `
+                            <div style="font-size:0.65rem;color:#9ca3af;margin-bottom:0.5rem;">Edit the summary below if needed. This will be passed to the next step.</div>
+                            <textarea id="review-summary-${p.id}">${escapeHtml(summaryText)}</textarea>
+                        `;
+                    }
+
                     reviewGateHtml = `
-                        <div class="pipeline-review-gate">
+                        <div class="pipeline-review-gate" data-structured="${hasStructured}">
                             <div style="font-size:0.75rem;color:#fbbf24;font-weight:600;margin-bottom:0.25rem;">
                                 Review ${agent?.name || ''}'s output before continuing
                             </div>
-                            <div style="font-size:0.65rem;color:#9ca3af;margin-bottom:0.5rem;">Edit the summary below if needed. This will be passed to the next step.</div>
-                            <textarea id="review-summary-${p.id}">${escapeHtml(summaryText)}</textarea>
-                            <details style="margin-bottom:0.5rem;">
+                            ${reviewBodyHtml}
+                            <details style="margin-bottom:0.5rem;margin-top:0.5rem;">
                                 <summary style="font-size:0.65rem;color:#6b7280;cursor:pointer;">Show raw output</summary>
                                 <pre style="font-size:0.6rem;color:#9ca3af;max-height:150px;overflow:auto;margin-top:0.25rem;white-space:pre-wrap;word-break:break-word;">${escapeHtml(reviewStep?.output || '')}</pre>
                             </details>
@@ -3480,13 +3818,16 @@
                     const errorStepIndex = errorStep ? p.steps.indexOf(errorStep) : -1;
                     const agent = errorStep ? AGENT_DEFINITIONS.find(a => a.id === errorStep.agentId) : null;
 
+                    const originalTask = errorStep?.taskTemplate || errorStep?.task || '';
                     errorPanelHtml = `
                         <div class="pipeline-error-panel">
                             <div style="font-size:0.75rem;color:#f87171;font-weight:600;margin-bottom:0.25rem;">
                                 Step ${errorStepIndex + 1} failed (${agent?.name || 'Unknown'})
                             </div>
                             <pre style="font-size:0.6rem;color:#9ca3af;max-height:100px;overflow:auto;margin:0.25rem 0;white-space:pre-wrap;word-break:break-word;">${escapeHtml((errorStep?.output || '').substring(0, 1000))}</pre>
-                            <div style="font-size:0.65rem;color:#6b7280;margin-bottom:0.25rem;">Provide manual output to continue (override):</div>
+                            <div style="font-size:0.65rem;color:#fbbf24;margin-bottom:0.15rem;">Edit task before retrying:</div>
+                            <textarea id="error-task-${p.id}" style="min-height:40px;">${escapeHtml(originalTask)}</textarea>
+                            <div style="font-size:0.65rem;color:#6b7280;margin-top:0.4rem;margin-bottom:0.15rem;">Or provide manual output (override):</div>
                             <textarea id="error-override-${p.id}" placeholder="Paste or type replacement output..."></textarea>
                             <div class="pipeline-action-btns">
                                 <button class="btn" style="border-color:rgba(245,158,11,0.4);color:#fbbf24;" onclick="submitPipelineRetry('${p.id}', ${errorStepIndex}, 'retry')">Retry Step</button>
@@ -3501,6 +3842,10 @@
                                        p.status === 'completed' ? '#4ade80' :
                                        p.status === 'awaiting_review' ? '#f59e0b' : '#8b5cf6';
 
+                // View Report button for completed pipelines
+                const reportBtnHtml = p.status === 'completed' ?
+                    `<button class="btn" style="font-size:0.6rem;padding:0.2rem 0.5rem;margin-top:0.4rem;border-color:rgba(74,222,128,0.4);color:#4ade80;" onclick="togglePipelineReport('${p.id}')">View Report</button>` : '';
+
                 html += `
                     <div class="pipeline-card ${p.status}">
                         <div class="pipeline-header">
@@ -3514,21 +3859,54 @@
                         <div class="pipeline-steps">${stepsHtml}</div>
                         ${reviewGateHtml}
                         ${errorPanelHtml}
+                        ${reportBtnHtml}
+                        <div id="pipeline-report-${p.id}" class="pipeline-report" style="display:none;"></div>
                     </div>
                 `;
             });
             container.innerHTML = html;
         }
 
+        function addHandoffFinding(pipelineId) {
+            const list = document.getElementById(`review-findings-${pipelineId}`);
+            if (!list) return;
+            const li = document.createElement('li');
+            li.innerHTML = `<span style="color:#6b7280;">•</span> <input type="text" class="review-finding-${pipelineId}" value="" placeholder="New finding..." /><button onclick="this.parentElement.remove()">✕</button>`;
+            list.appendChild(li);
+            li.querySelector('input').focus();
+        }
+
         async function submitPipelineReview(pipelineId, stepIndex, action) {
-            const textarea = document.getElementById(`review-summary-${pipelineId}`);
-            const editedSummary = textarea ? textarea.value : undefined;
+            const gate = document.querySelector(`.pipeline-review-gate[data-structured="true"]`);
+            let editedSummary, editedHandoff;
+
+            if (gate && action === 'approve') {
+                // Collect structured handoff fields
+                const summaryInput = document.getElementById(`review-handoff-summary-${pipelineId}`);
+                const angleInput = document.getElementById(`review-handoff-angle-${pipelineId}`);
+                const findingInputs = document.querySelectorAll(`.review-finding-${pipelineId}`);
+                const sourceInputs = document.querySelectorAll(`.review-source-${pipelineId}`);
+
+                const confidenceSelect = document.getElementById(`review-handoff-confidence-${pipelineId}`);
+
+                editedHandoff = {
+                    summary: summaryInput ? summaryInput.value : '',
+                    key_findings: Array.from(findingInputs).map(i => i.value).filter(v => v.trim()),
+                    sources: Array.from(sourceInputs).map(i => i.value).filter(v => v.trim()),
+                    recommended_angle: angleInput ? angleInput.value : '',
+                    confidence: confidenceSelect ? confidenceSelect.value : 'medium'
+                };
+            } else {
+                // Fallback: plain textarea
+                const textarea = document.getElementById(`review-summary-${pipelineId}`);
+                editedSummary = textarea ? textarea.value : undefined;
+            }
 
             try {
                 const response = await fetch('http://localhost:8888/pipelines/review', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pipelineId, stepIndex, action, editedSummary })
+                    body: JSON.stringify({ pipelineId, stepIndex, action, editedSummary, editedHandoff })
                 });
                 const result = await response.json();
                 if (result.success) {
@@ -3543,6 +3921,7 @@
 
         async function submitPipelineRetry(pipelineId, stepIndex, action) {
             let output = undefined;
+            let editedTask = undefined;
             if (action === 'override') {
                 const textarea = document.getElementById(`error-override-${pipelineId}`);
                 output = textarea ? textarea.value : '';
@@ -3551,12 +3930,18 @@
                     return;
                 }
             }
+            if (action === 'retry') {
+                const taskTextarea = document.getElementById(`error-task-${pipelineId}`);
+                if (taskTextarea && taskTextarea.value.trim()) {
+                    editedTask = taskTextarea.value.trim();
+                }
+            }
 
             try {
                 const response = await fetch('http://localhost:8888/pipelines/retry', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pipelineId, stepIndex, action, output })
+                    body: JSON.stringify({ pipelineId, stepIndex, action, output, editedTask })
                 });
                 const result = await response.json();
                 if (result.success) {
@@ -3568,6 +3953,221 @@
             } catch (e) {
                 showToast('Connection Error', e.message, 'error');
             }
+        }
+
+        // ─── Pipeline Report ─────────────────────────────────────────────
+
+        function openAgentFileBrowser(agentId) {
+            // Find the agent card's file browser toggle and open it
+            const toggle = document.querySelector(`[onclick="toggleFileBrowser('${agentId}', this)"]`);
+            if (toggle) {
+                const panel = document.getElementById(`filebrowser-panel-${agentId}`);
+                if (panel && panel.style.display !== 'block') {
+                    toggle.click();
+                }
+                // Scroll to the agent card
+                toggle.closest('.agent-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        async function toggleDeliverablePreview(previewId, agentId, fileName) {
+            const el = document.getElementById(previewId);
+            if (!el) return;
+            if (el.style.display === 'block') {
+                el.style.display = 'none';
+                return;
+            }
+            el.style.display = 'block';
+            el.innerHTML = '<div style="font-size:0.55rem;color:#6b7280;">Loading preview...</div>';
+
+            try {
+                const response = await fetch(`http://localhost:8888/agents/files/${agentId}`);
+                const data = await response.json();
+                const file = (data.files || []).find(f => f.name === fileName);
+                if (file && file.preview) {
+                    el.innerHTML = `<pre>${escapeHtml(file.preview)}</pre>`;
+                } else {
+                    el.innerHTML = '<div style="font-size:0.55rem;color:#6b7280;">No preview available</div>';
+                }
+            } catch (e) {
+                el.innerHTML = `<div style="font-size:0.55rem;color:#f87171;">Preview failed: ${escapeHtml(e.message)}</div>`;
+            }
+        }
+
+        const openReports = new Set();
+
+        async function togglePipelineReport(pipelineId) {
+            const container = document.getElementById(`pipeline-report-${pipelineId}`);
+            if (!container) return;
+
+            if (openReports.has(pipelineId)) {
+                container.style.display = 'none';
+                openReports.delete(pipelineId);
+                return;
+            }
+
+            container.innerHTML = '<div style="font-size:0.65rem;color:#6b7280;padding:0.5rem;">Loading report...</div>';
+            container.style.display = 'block';
+            openReports.add(pipelineId);
+
+            try {
+                const response = await fetch(`http://localhost:8888/pipelines/${pipelineId}/report`);
+                const report = await response.json();
+                if (report.error) {
+                    container.innerHTML = `<div style="font-size:0.65rem;color:#f87171;padding:0.5rem;">${escapeHtml(report.error)}</div>`;
+                    return;
+                }
+                renderPipelineReport(container, report);
+            } catch (e) {
+                container.innerHTML = `<div style="font-size:0.65rem;color:#f87171;padding:0.5rem;">Failed to load report: ${escapeHtml(e.message)}</div>`;
+            }
+        }
+
+        function formatDuration(ms) {
+            if (ms < 1000) return `${ms}ms`;
+            const secs = Math.floor(ms / 1000);
+            if (secs < 60) return `${secs}s`;
+            const mins = Math.floor(secs / 60);
+            const remainSecs = secs % 60;
+            return `${mins}m ${remainSecs}s`;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return `${bytes}B`;
+            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+            return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+        }
+
+        function renderPipelineReport(container, report) {
+            const totalTime = formatDuration(report.totalDuration);
+
+            // Step timeline
+            const maxDuration = Math.max(...report.steps.map(s => s.duration || 1));
+            const timelineHtml = report.steps.map((step, i) => {
+                const durPct = Math.max(5, Math.round((step.duration / maxDuration) * 100));
+                const durStr = formatDuration(step.duration);
+                const isLast = i === report.steps.length - 1;
+
+                // Handoff section (non-final steps only)
+                let handoffHtml = '';
+                if (!isLast && step.handoff && step.handoff.key_findings && step.handoff.key_findings.length > 0) {
+                    const findings = step.handoff.key_findings.map(f => `<div style="padding-left:0.5rem;">• ${escapeHtml(f)}</div>`).join('');
+                    const sources = (step.handoff.sources || []).filter(s => s.trim()).map(s => `<div style="padding-left:0.5rem;">• ${autoLinkUrls(s)}</div>`).join('');
+                    const confidenceBadge = step.handoff.confidence ? `<span class="handoff-confidence ${step.handoff.confidence}" style="margin-left:0.5rem;">${step.handoff.confidence}</span>` : '';
+                    handoffHtml = `
+                        <div class="report-handoff">
+                            <div class="report-handoff-label">Handoff to next step${confidenceBadge}</div>
+                            <div style="margin-bottom:0.15rem;">${escapeHtml(step.handoff.summary || '')}</div>
+                            ${findings}
+                            ${step.handoff.recommended_angle ? `<div style="color:#fbbf24;margin-top:0.15rem;">Angle: ${escapeHtml(step.handoff.recommended_angle)}</div>` : ''}
+                            ${sources ? `<div style="color:#60a5fa;margin-top:0.15rem;font-size:0.55rem;">Sources: ${sources}</div>` : ''}
+                        </div>
+                    `;
+                } else if (!isLast && step.summary) {
+                    handoffHtml = `
+                        <div class="report-handoff">
+                            <div class="report-handoff-label">Handoff to next step</div>
+                            <div>${escapeHtml(step.summary.substring(0, 300))}</div>
+                        </div>
+                    `;
+                }
+
+                // Output files for this step
+                let filesHtml = '';
+                if (step.outputFiles && step.outputFiles.length > 0) {
+                    filesHtml = step.outputFiles.map(f =>
+                        `<div class="report-deliverable">
+                            📄 ${escapeHtml(f.name)}
+                            <span class="report-deliverable-size">${formatFileSize(f.size)}</span>
+                            <button class="report-file-btn" onclick="openAgentFileBrowser('${step.agentId}')">Open in Files</button>
+                        </div>`
+                    ).join('');
+                }
+
+                // Output preview (collapsed)
+                const outputPreview = step.output ? `
+                    <details style="margin-top:0.25rem;">
+                        <summary style="font-size:0.55rem;color:#6b7280;cursor:pointer;">Show output</summary>
+                        <pre style="font-size:0.55rem;color:#9ca3af;max-height:120px;overflow:auto;margin-top:0.15rem;white-space:pre-wrap;word-break:break-word;">${escapeHtml(step.output.substring(0, 1500))}</pre>
+                    </details>
+                ` : '';
+
+                return `
+                    <div class="report-step ${step.overridden ? 'overridden' : ''}">
+                        <div class="report-step-header">
+                            <span class="report-step-agent">Step ${i + 1}: ${escapeHtml(step.agent)}${step.overridden ? ' (overridden)' : ''}</span>
+                            <span class="report-step-duration">${durStr}</span>
+                        </div>
+                        <div class="report-step-task">${escapeHtml(step.task.substring(0, 200))}</div>
+                        <div style="height:3px;background:rgba(255,255,255,0.05);border-radius:2px;margin:0.2rem 0;">
+                            <div style="height:100%;width:${durPct}%;background:linear-gradient(90deg,#4ade80,#22d3ee);border-radius:2px;"></div>
+                        </div>
+                        ${filesHtml}
+                        ${outputPreview}
+                        ${handoffHtml}
+                    </div>
+                `;
+            }).join('');
+
+            // Deliverables section
+            let deliverablesHtml = '';
+            if (report.deliverables && report.deliverables.length > 0) {
+                const delItems = report.deliverables.map((d, di) => {
+                    // Find the agent ID for the file browser link
+                    const stepWithFile = report.steps.find(s => s.outputFiles?.some(f => f.name === d.name));
+                    const agentId = stepWithFile?.agentId || '';
+                    return `
+                        <div class="report-deliverable">
+                            📦 <strong>${escapeHtml(d.name)}</strong>
+                            <span class="report-deliverable-size">${formatFileSize(d.size)}</span>
+                            <span style="font-size:0.5rem;color:#6b7280;">— ${escapeHtml(d.agent || '')}</span>
+                            ${agentId ? `<button class="report-file-btn" onclick="openAgentFileBrowser('${agentId}')">Open in Files</button>` : ''}
+                            <button class="report-file-btn" onclick="toggleDeliverablePreview('del-preview-${di}', '${agentId}', '${escapeHtml(d.name)}')">Preview</button>
+                        </div>
+                        <div id="del-preview-${di}" class="deliverable-preview" style="display:none;"></div>
+                    `;
+                }).join('');
+                deliverablesHtml = `
+                    <div class="report-deliverables">
+                        <div style="font-size:0.65rem;color:#4ade80;font-weight:600;margin-bottom:0.3rem;">Deliverables</div>
+                        ${delItems}
+                    </div>
+                `;
+            }
+
+            // Handoff chain visualization with excerpts
+            const chainNodes = report.steps.map((s, i) => {
+                const isLast = i === report.steps.length - 1;
+                const label = s.agent;
+                const findingsCount = s.handoff?.key_findings?.length || 0;
+                const excerpt = !isLast && s.handoff
+                    ? (s.handoff.recommended_angle || s.handoff.summary || '')
+                    : '';
+                const truncExcerpt = excerpt.length > 50 ? excerpt.substring(0, 50) + '…' : excerpt;
+                const meta = findingsCount ? `<div style="font-size:0.45rem;color:#60a5fa;">${findingsCount} finding${findingsCount > 1 ? 's' : ''}</div>` : '';
+                const excerptHtml = truncExcerpt ? `<div style="font-size:0.4rem;color:#9ca3af;max-width:100px;text-align:center;margin-top:0.1rem;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(excerpt)}">${escapeHtml(truncExcerpt)}</div>` : '';
+                return `<span class="report-chain-node" style="display:inline-flex;flex-direction:column;align-items:center;">${escapeHtml(label)}${meta}${excerptHtml}</span>`;
+            });
+            const chainHtml = `
+                <div class="report-handoff-chain">
+                    <div style="font-size:0.55rem;color:#a78bfa;font-weight:600;margin-bottom:0.3rem;">Handoff Chain</div>
+                    <div class="report-chain-flow">
+                        ${chainNodes.join('<span class="report-chain-arrow">→</span>')}
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = `
+                <div class="report-header">
+                    <span>${escapeHtml(report.goal || 'Pipeline Report')}</span>
+                    <span style="font-size:0.6rem;color:#4ade80;">${totalTime} total</span>
+                </div>
+                ${chainHtml}
+                <div class="report-timeline" style="margin-top:0.5rem;">
+                    ${timelineHtml}
+                </div>
+                ${deliverablesHtml}
+            `;
         }
 
         // ─── Command Bar ─────────────────────────────────────────────────
@@ -3682,12 +4282,30 @@
                     html += `<div class="approval-arrow">↓</div>`;
                 }
 
+                // Show metadata fields from enhanced decomposition
+                let metaHtml = '';
+                if (t.expectedOutput || t.successCriteria || t.handoffNote) {
+                    metaHtml = `<div class="approval-step-meta">`;
+                    if (t.expectedOutput) metaHtml += `<div class="approval-meta-row"><span class="approval-meta-label">Expected output:</span> ${escapeHtml(t.expectedOutput)}</div>`;
+                    if (t.successCriteria) metaHtml += `<div class="approval-meta-row"><span class="approval-meta-label">Success criteria:</span> ${escapeHtml(t.successCriteria)}</div>`;
+                    if (t.handoffNote) metaHtml += `<div class="approval-meta-row"><span class="approval-meta-label">Handoff:</span> ${escapeHtml(t.handoffNote)}</div>`;
+                    metaHtml += `</div>`;
+                }
+
+                const agentOptions = ['newton', 'bronte', 'guido'].map(a => {
+                    const aName = agentNames[a] || a;
+                    const selected = a === t.agent ? 'selected' : '';
+                    return `<option value="${a}" ${selected}>${aName}</option>`;
+                }).join('');
+
                 html += `
                     <div class="approval-step">
                         <div class="approval-step-header">
                             <span class="approval-step-num">${i + 1}.</span>
                             <div class="approval-step-avatar" style="background:${color};">${initial}</div>
-                            <span class="approval-step-name">${name}</span>
+                            <select onchange="changeApprovalAgent(${i}, this.value)" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;border-radius:0.25rem;padding:0.1rem 0.25rem;font-size:0.75rem;cursor:pointer;">
+                                ${agentOptions}
+                            </select>
                             ${pendingApprovalPlan.tasks.length > 1
                                 ? `<button class="approval-step-remove" onclick="removeApprovalStep(${i})" title="Remove step">×</button>`
                                 : ''}
@@ -3695,6 +4313,7 @@
                         <textarea class="approval-step-textarea"
                             oninput="updateApprovalStep(${i}, this.value)"
                             rows="2">${escapeHtml(t.task)}</textarea>
+                        ${metaHtml}
                     </div>
                 `;
             });
@@ -3718,6 +4337,31 @@
                 }
             });
             renderApprovalSteps();
+        }
+
+        function addApprovalStep() {
+            if (!pendingApprovalPlan) return;
+            // Default to newton, user can change via dropdown rendered in step
+            const lastAgent = pendingApprovalPlan.tasks.length > 0
+                ? pendingApprovalPlan.tasks[pendingApprovalPlan.tasks.length - 1].agent
+                : 'newton';
+            const agents = ['newton', 'bronte', 'guido'];
+            // Pick next agent in rotation that differs from last
+            let newAgent = agents.find(a => a !== lastAgent) || 'newton';
+            const newStep = {
+                agent: newAgent,
+                task: '',
+                dependsOn: pendingApprovalPlan.strategy === 'sequential' ? pendingApprovalPlan.tasks.length - 1 : undefined
+            };
+            pendingApprovalPlan.tasks.push(newStep);
+            renderApprovalSteps();
+        }
+
+        function changeApprovalAgent(index, agentId) {
+            if (pendingApprovalPlan && pendingApprovalPlan.tasks[index]) {
+                pendingApprovalPlan.tasks[index].agent = agentId;
+                renderApprovalSteps();
+            }
         }
 
         function submitApproval() {
