@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "skills": {
+    "coding-agent": {
+      "version": "1.0.1",
+      "installedAt": 1769520813162
+    },
+    "github": {
+      "version": "1.0.0",
+      "installedAt": 1769520836971
+    },
+    "obsidian": {
+      "version": "1.0.0",
+      "installedAt": 1769520841699
+    },
+    "summarize": {
+      "version": "1.0.0",
+      "installedAt": 1769520853942
+    },
+    "openai-whisper": {
+      "version": "1.0.0",
+      "installedAt": 1769520893728
+    },
+    "n8n": {
+      "version": "1.0.2",
+      "installedAt": 1769521974743
+    },
+    "things-mac": {
+      "version": "1.0.0",
+      "installedAt": 1769522065971
+    },
+    "video-frames": {
+      "version": "1.0.0",
+      "installedAt": 1769522106923
+    },
+    "peaq-robotics": {
+      "version": "0.1.7",
+      "installedAt": 1771606129476
+    },
+    "agent-autonomy-kit": {
+      "version": "1.0.0",
+      "installedAt": 1771606148745
+    }
+  }
+}

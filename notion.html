@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClearMind - Write. Not Configure.</title>
+    <style>
+        /* === CSS VARIABLES === */
+        :root {
+            --bg-primary: #0A0A0B;
+            --bg-secondary: #111113;
+            --bg-tertiary: #18181B;
+            --bg-card: #1C1C1F;
+            --accent: #8B5CF6;
+            --accent-hover: #A78BFA;
+            --accent-glow: rgba(139, 92, 246, 0.25);
+            --text-primary: #FAFAFA;
+            --text-secondary: #A1A1AA;
+            --text-muted: #71717A;
+            --border: #27272A;
+            --success: #22C55E;
+        }
+
+        /* === RESET === */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* === BACKGROUND === */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            background: 
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(139, 92, 246, 0.2), transparent),
+                radial-gradient(ellipse 50% 30% at 100% 80%, rgba(139, 92, 246, 0.1), transparent);
+        }
+
+        /* === NAVIGATION === */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 1.25rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(10, 10, 11, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .logo span {
+            color: var(--accent);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-cta {
+            background: var(--accent);
+            color: white;
+            padding: 0.6rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .nav-cta:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        /* === HERO === */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 8rem 5% 5rem;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .hero-badge span {
+            width: 6px;
+            height: 6px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            max-width: 700px;
+        }
+
+        .hero h1 span {
+            color: var(--accent);
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            max-width: 500px;
+            margin-bottom: 2rem;
+        }
+
+        .hero-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--accent);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .hero-cta:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px var(--accent-glow);
+        }
+
+        .hero-cta svg {
+            transition: transform 0.2s;
+        }
+
+        .hero-cta:hover svg {
+            transform: translateX(4px);
+        }
+
+        .hero-note {
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* === PROBLEM === */
+        .problem {
+            padding: 5rem 5%;
+            background: var(--bg-secondary);
+        }
+
+        .problem-content {
+            max-width: 700px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .problem h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+        }
+
+        .problem-list {
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .problem-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 1rem 1.25rem;
+            border-radius: 10px;
+            color: var(--text-secondary);
+        }
+
+        .problem-item strong {
+            color: var(--text-primary);
+        }
+
+        /* === FEATURES === */
+        .features {
+            padding: 5rem 5%;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3.5rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.75rem;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.75rem;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-3px);
+        }
+
+        .feature-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.925rem;
+        }
+
+        /* === DIFFERENTIATION === */
+        .diff {
+            padding: 5rem 5%;
+            background: var(--bg-secondary);
+        }
+
+        .diff-table {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .diff-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .diff-row:last-child {
+            border-bottom: none;
+        }
+
+        .diff-cell {
+            padding: 1rem 1.5rem;
+        }
+
+        .diff-cell:first-child {
+            background: var(--bg-tertiary);
+            border-right: 1px solid var(--border);
+        }
+
+        .diff-cell strong {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .diff-cell p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .diff-cell:last-child p {
+            color: var(--text-primary);
+        }
+
+        /* === SOCIAL PROOF === */
+        .proof {
+            padding: 5rem 5%;
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        .proof-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .proof-card {
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .proof-card p {
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+
+        .proof-card cite {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-style: normal;
+        }
+
+        /* === WAITLIST === */
+        .waitlist {
+            padding: 6rem 5%;
+            max-width: 550px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .waitlist h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .waitlist > p {
+            color: var(--text-secondary);
+            margin-bottom: 1.75rem;
+        }
+
+        .waitlist-form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.875rem;
+        }
+
+        .form-input {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.9rem 1.1rem;
+            font-size: 1rem;
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.875rem;
+        }
+
+        .submit-btn {
+            background: var(--accent);
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            margin-top: 0.5rem;
+        }
+
+        .submit-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .form-note {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.75rem;
+        }
+
+        .success-message {
+            display: none;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+
+        /* === FOOTER === */
+        footer {
+            padding: 2.5rem 5%;
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--text-primary);
+        }
+
+        .copyright {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 2.1rem;
+            }
+
+            .diff-row {
+                grid-template-columns: 1fr;
+            }
+
+            .diff-cell:first-child {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="bg-gradient"></div>
+
+    <!-- NAV -->
+    <nav>
+        <div class="logo">Clear<span>Mind</span></div>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#diff">Compare</a>
+            <a href="#proof">Reviews</a>
+        </div>
+        <a href="#waitlist" class="nav-cta">Get Started</a>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-badge">
+            <span></span>
+            Now in Early Access
+        </div>
+        
+        <h1>Write. <span>Not configure.</span></h1>
+        
+        <p class="hero-subtitle">
+            The note-taking app for people who want to actually write.
+        </p>
+        
+        <a href="#waitlist" class="hero-cta">
+            Start writing free
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+        </a>
+        
+        <p class="hero-note">
+            No credit card • 30 seconds to first note
+        </p>
+    </section>
+
+    <!-- THE PROBLEM -->
+    <section class="problem">
+        <div class="problem-content">
+            <h2>You've felt this, right?</h2>
+            <div class="problem-list">
+                <div class="problem-item">
+                    <strong>Notion</strong> asks you to design your "workspace" before you write
+                </div>
+                <div class="problem-item">
+                    <strong>Coda</strong> wants you to configure "Packs" before you're productive
+                </div>
+                <div class="problem-item">
+                    <strong>ClickUp</strong> drowns you in views you don't need
+                </div>
+                <div class="problem-item">
+                    <strong>Obsidian</strong> is brilliant—if you have time to build your own system
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="features" id="features">
+        <div class="section-header">
+            <h2>The ClearMind Promise</h2>
+            <p>Notes that work. Finally.</p>
+        </div>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Instant</h3>
+                <p>Open. Type. Done. No account required to start. Your first note in 5 seconds.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3>Focused</h3>
+                <p>One interface. Notes list. Editor. That's it. No sidebars or toggles.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <h3>Fast Search</h3>
+                <p>10,000 notes? No problem. Find anything in milliseconds.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>Syncs Everywhere</h3>
+                <p>Mac. Windows. iOS. Android. Your notes are there. Always.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📝</div>
+                <h3>Markdown Friendly</h3>
+                <p>Type naturally or use Markdown. Export any time. No lock-in.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">👥</div>
+                <h3>Simple Collaboration</h3>
+                <p>Share a note with a link. Real-time editing. No permissions labyrinth.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- DIFFERENTIATION -->
+    <section class="diff" id="diff">
+        <div class="section-header">
+            <h2>How we compare</h2>
+        </div>
+        
+        <div class="diff-table">
+            <div class="diff-row">
+                <div class="diff-cell">
+                    <strong>vs. Notion</strong>
+                    <p>Workspace setup</p>
+                </div>
+                <div class="diff-cell">
+                    <p>Just notes</p>
+                </div>
+            </div>
+            <div class="diff-row">
+                <div class="diff-cell">
+                    <strong>vs. Coda</strong>
+                    <p>Learning curve</p>
+                </div>
+                <div class="diff-cell">
+                    <p>30 seconds to productivity</p>
+                </div>
+            </div>
+            <div class="diff-row">
+                <div class="diff-cell">
+                    <strong>vs. ClickUp</strong>
+                    <p>Feature flood</p>
+                </div>
+                <div class="diff-cell">
+                    <p>Focused on writing</p>
+                </div>
+            </div>
+            <div class="diff-row">
+                <div class="diff-cell">
+                    <strong>vs. Obsidian</strong>
+                    <p>DIY system</p>
+                </div>
+                <div class="diff-cell">
+                    <p>Works out of the box + sync</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SOCIAL PROOF -->
+    <section class="proof" id="proof">
+        <div class="section-header">
+            <h2>What people are saying</h2>
+        </div>
+        
+        <div class="proof-grid">
+            <div class="proof-card">
+                <p>"I opened ClearMind and was writing in 5 seconds. Notion took me 20 minutes to figure out what a 'workspace' should be."</p>
+                <cite>— Jamie, freelance writer</cite>
+            </div>
+            
+            <div class="proof-card">
+                <p>"ClearMind is Notion before Notion forgot what notes were for."</p>
+                <cite>— Alex, startup founder</cite>
+            </div>
+            
+            <div class="proof-card">
+                <p>"Finally, an app that asks nothing from me except my words."</p>
+                <cite>— Sam, researcher</cite>
+            </div>
+        </div>
+    </section>
+
+    <!-- WAITLIST -->
+    <section class="waitlist" id="waitlist">
+        <h2>Ready to write?</h2>
+        <p>Join the waitlist and get early access.</p>
+        
+        <form class="waitlist-form" id="waitlistForm">
+            <div class="form-row">
+                <input type="text" class="form-input" placeholder="First name" required>
+                <input type="text" class="form-input" placeholder="Last name" required>
+            </div>
+            <input type="email" class="form-input" placeholder="Email address" required>
+            <button type="submit" class="submit-btn">Get ClearMind Free</button>
+            <p class="form-note">No credit card. No trial. No catches.</p>
+            <div class="success-message" id="successMessage">
+                ✓ You're on the list! We'll be in touch soon.
+            </div>
+        </form>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-links">
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">Twitter</a>
+            <a href="#">Contact</a>
+        </div>
+        <p class="copyright">© 2026 ClearMind</p>
+    </footer>
+
+    <script>
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Form submission
+        document.getElementById('waitlistForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            document.getElementById('successMessage').style.display = 'block';
+            this.reset();
+            
+            setTimeout(() => {
+                document.getElementById('successMessage').style.display = 'none';
+            }, 5000);
+        });
+    </script>
+</body>
+</html>

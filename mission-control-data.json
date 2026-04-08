@@ -1,0 +1,171 @@
+{
+  "boards": [
+    {
+      "id": "board-1",
+      "name": "Main",
+      "tasks": [
+        {
+          "id": "1",
+          "title": "Set up Mission Control dashboard",
+          "column": "review",
+          "tag": "coding",
+          "created": "2026-01-26T18:15:00.000Z",
+          "position": 4
+        },
+        {
+          "id": "1737919200001",
+          "title": "Study DeepSeek R1 architecture",
+          "column": "backlog",
+          "tag": "coding",
+          "created": "2026-01-26T18:20:00.000Z",
+          "position": 1
+        },
+        {
+          "id": "1737919200002",
+          "title": "Build inference-time scaling demo",
+          "column": "backlog",
+          "tag": "coding",
+          "created": "2026-01-26T18:20:00.000Z",
+          "position": 2
+        },
+        {
+          "id": "1737919200003",
+          "title": "Post 5 intro tweets on @automadynamics",
+          "column": "inprogress",
+          "tag": "content",
+          "created": "2026-01-26T18:20:00.000Z",
+          "position": 0
+        },
+        {
+          "id": "1737919200012",
+          "title": "Read MIT paper on inference-time scaling",
+          "column": "inprogress",
+          "tag": "content",
+          "created": "2026-01-26T18:20:00.000Z",
+          "position": 1
+        },
+        {
+          "id": "1769536100001",
+          "title": "Launch @automadynamics X account",
+          "column": "review",
+          "tag": "content",
+          "created": "2026-01-27T17:43:00.000Z",
+          "position": 1
+        },
+        {
+          "id": "1769536100002",
+          "title": "Create AutomaDynamics.com landing page",
+          "column": "review",
+          "tag": "content",
+          "created": "2026-01-27T17:43:00.000Z",
+          "position": 2
+        },
+        {
+          "id": "1769536100004",
+          "title": "Set up OG image and Twitter card for automadynamics.com",
+          "column": "review",
+          "tag": "content",
+          "created": "2026-01-27T17:43:00.000Z",
+          "position": 3
+        },
+        {
+          "id": "1771599674698",
+          "title": "Morning Standup 9am",
+          "column": "recurring",
+          "tag": "content",
+          "position": 1,
+          "created": "2026-02-20T15:01:14.700Z"
+        },
+        {
+          "id": "1771599801884",
+          "title": "Technical Debt Review",
+          "column": "recurring",
+          "tag": "",
+          "position": 1,
+          "created": "2026-02-20T15:03:21.884Z"
+        },
+        {
+          "id": "1771599824631",
+          "title": "System Audit / Health Check",
+          "column": "recurring",
+          "tag": "coding",
+          "position": 2,
+          "created": "2026-02-20T15:03:44.631Z"
+        },
+        {
+          "id": "1771599938550",
+          "title": "The AI Acceleration gap: Why Some Enterprises are surging ahead",
+          "column": "backlog",
+          "tag": "youtube",
+          "position": 3,
+          "created": "2026-02-20T15:05:38.550Z"
+        }
+      ],
+      "activity": [
+        {
+          "action": "Moved from backlog to inprogress",
+          "taskTitle": "Read MIT paper on inference-time scaling",
+          "timestamp": "2026-02-20T15:06:39.502Z"
+        },
+        {
+          "action": "Reordered",
+          "taskTitle": "The AI Acceleration gap: Why Some Enterprises are surging ahead",
+          "timestamp": "2026-02-20T15:06:22.672Z"
+        },
+        {
+          "action": "Created",
+          "taskTitle": "The AI Acceleration gap: Why Some Enterprises are surging ahead",
+          "timestamp": "2026-02-20T15:05:38.552Z"
+        },
+        {
+          "action": "Deleted",
+          "taskTitle": "Record Claude Code walkthrough",
+          "timestamp": "2026-02-20T15:04:06.681Z"
+        },
+        {
+          "action": "Deleted",
+          "taskTitle": "Test bird CLI for X automation",
+          "timestamp": "2026-02-20T15:03:56.854Z"
+        },
+        {
+          "action": "Created",
+          "taskTitle": "System Audit / Health Check",
+          "timestamp": "2026-02-20T15:03:44.631Z"
+        },
+        {
+          "action": "Created",
+          "taskTitle": "Technical Debt Review",
+          "timestamp": "2026-02-20T15:03:21.884Z"
+        },
+        {
+          "action": "Deleted",
+          "taskTitle": "New OpenClaw Skills",
+          "timestamp": "2026-02-20T15:01:33.067Z"
+        },
+        {
+          "action": "Created",
+          "taskTitle": "Morning Standup 9am",
+          "timestamp": "2026-02-20T15:01:14.700Z"
+        },
+        {
+          "action": "Deleted",
+          "taskTitle": "Morning Standup 9am",
+          "timestamp": "2026-02-20T15:00:58.078Z"
+        }
+      ]
+    },
+    {
+      "id": "board-1771851636793",
+      "name": "ideas",
+      "tasks": [],
+      "activity": []
+    },
+    {
+      "id": "board-1771851650207",
+      "name": "costs",
+      "tasks": [],
+      "activity": []
+    }
+  ],
+  "activeBoardId": "board-1"
+}

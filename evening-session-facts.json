@@ -1,0 +1,24 @@
+{
+  "facts": [
+    {
+      "fact": "Real agent execution is working - successfully spawning tasks to named agents Guido, Newton, and Bronte",
+      "category": "milestone"
+    },
+    {
+      "fact": "Agent workspaces have been set up at /Users/marksstephenson/agents/ for organized agent operations",
+      "category": "system"
+    },
+    {
+      "fact": "Agents are creating files - fizzbuzz.py and other files have been successfully created by spawned agents",
+      "category": "status"
+    },
+    {
+      "fact": "Server stability issues encountered - multiple SIGTERM and SIGKILL signals requiring investigation",
+      "category": "status"
+    },
+    {
+      "fact": "UI features implemented - auto-refresh every 5 seconds and pulsing indicators to show active agents",
+      "category": "milestone"
+    }
+  ]
+}

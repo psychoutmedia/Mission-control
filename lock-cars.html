@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lock Cars - Premium Car Rental</title>
+    <style>
+        /* === CSS VARIABLES === */
+        :root {
+            --primary: #1A1A1A;
+            --secondary: #2D2D2D;
+            --accent: #E63946;
+            --accent-dark: #C1121F;
+            --light: #F8F9FA;
+            --dark: #0D0D0D;
+            --white: #FFFFFF;
+            --text: #333333;
+            --border: #DEE2E6;
+        }
+
+        /* === RESET & BASE === */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--light);
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* === NAVIGATION === */
+        nav {
+            background: var(--primary);
+            padding: 1rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--white);
+            letter-spacing: 2px;
+        }
+
+        .logo span {
+            color: var(--accent);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: #CCC;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent);
+        }
+
+        .cta-btn {
+            background: var(--accent);
+            color: var(--white);
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: background 0.3s;
+        }
+
+        .cta-btn:hover {
+            background: var(--accent-dark);
+        }
+
+        /* === HERO SECTION === */
+        .hero {
+            height: 100vh;
+            background: linear-gradient(rgba(13, 13, 13, 0.75), rgba(13, 13, 13, 0.75)),
+                        url('https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=1920') center/cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: var(--white);
+            padding: 0 5%;
+            margin-top: 60px;
+        }
+
+        .hero-content h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+
+        .hero-content p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .hero-btns {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--white);
+            padding: 1rem 2rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--white);
+            padding: 1rem 2rem;
+            border: 2px solid var(--white);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background: var(--white);
+            color: var(--dark);
+        }
+
+        /* === FLEET SECTION === */
+        .fleet {
+            padding: 5rem 5%;
+            background: var(--white);
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .section-header p {
+            color: #666;
+        }
+
+        .fleet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        .car-card {
+            background: var(--light);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .car-card:hover {
+            box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+            transform: translateY(-5px);
+        }
+
+        .car-img {
+            height: 200px;
+            background: linear-gradient(135deg, #333 0%, #666 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+        }
+
+        .car-details {
+            padding: 1.5rem;
+        }
+
+        .car-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .car-title h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .car-title .type {
+            background: var(--accent);
+            color: var(--white);
+            padding: 0.25rem 0.75rem;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .car-features {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .car-features span {
+            font-size: 0.85rem;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .car-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .car-price {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .car-price span {
+            font-size: 0.8rem;
+            color: #666;
+            font-weight: 400;
+        }
+
+        .book-btn {
+            background: var(--primary);
+            color: var(--white);
+            padding: 0.6rem 1.2rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background 0.3s;
+        }
+
+        .book-btn:hover {
+            background: var(--accent);
+        }
+
+        /* === PRICING SECTION === */
+        .pricing {
+            padding: 5rem 5%;
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .pricing .section-header h2,
+        .pricing .section-header p {
+            color: var(--white);
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .price-card {
+            background: var(--secondary);
+            padding: 2.5rem 2rem;
+            text-align: center;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .price-card.featured {
+            border-color: var(--accent);
+            transform: scale(1.05);
+        }
+
+        .price-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .price-card.featured:hover {
+            transform: scale(1.05) translateY(-5px);
+        }
+
+        .price-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .price-card .subtitle {
+            color: #AAA;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .price-amount {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .price-amount span {
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        .price-period {
+            color: #AAA;
+            margin-bottom: 2rem;
+        }
+
+        .price-features {
+            text-align: left;
+            margin-bottom: 2rem;
+        }
+
+        .price-features li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .price-features i {
+            color: var(--accent);
+        }
+
+        .price-btn {
+            display: block;
+            background: var(--accent);
+            color: var(--white);
+            padding: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background 0.3s;
+        }
+
+        .price-btn:hover {
+            background: var(--accent-dark);
+        }
+
+        .price-card.featured .price-btn {
+            background: var(--white);
+            color: var(--primary);
+        }
+
+        .price-card.featured .price-btn:hover {
+            background: var(--accent);
+            color: var(--white);
+        }
+
+        /* === WHY CHOOSE US === */
+        .why-us {
+            padding: 5rem 5%;
+            background: var(--light);
+        }
+
+        .why-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .why-card {
+            background: var(--white);
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s;
+            border: 1px solid var(--border);
+        }
+
+        .why-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-5px);
+        }
+
+        .why-icon {
+            width: 70px;
+            height: 70px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 1.8rem;
+            color: var(--white);
+        }
+
+        .why-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .why-card p {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        /* === BOOKING FORM === */
+        .booking {
+            padding: 5rem 5%;
+            background: var(--white);
+        }
+
+        .booking-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--light);
+            padding: 3rem;
+        }
+
+        .booking-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 0;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.9rem;
+            border: 1px solid var(--border);
+            font-size: 1rem;
+            font-family: inherit;
+            background: var(--white);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .submit-btn {
+            grid-column: 1 / -1;
+            background: var(--accent);
+            color: var(--white);
+            padding: 1.2rem;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .submit-btn:hover {
+            background: var(--accent-dark);
+        }
+
+        /* === FOOTER === */
+        footer {
+            background: var(--dark);
+            color: var(--white);
+            padding: 3rem 5% 1.5rem;
+            text-align: center;
+        }
+
+        .footer-logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-logo span {
+            color: var(--accent);
+        }
+
+        .footer-tagline {
+            opacity: 0.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-copyright {
+            font-size: 0.85rem;
+            opacity: 0.5;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero-content h1 {
+                font-size: 2.2rem;
+            }
+
+            .hero-btns {
+                flex-direction: column;
+            }
+
+            .booking-form {
+                grid-template-columns: 1fr;
+            }
+
+            .price-card.featured {
+                transform: none;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- NAVIGATION -->
+    <nav>
+        <div class="logo">Lock <span>Cars</span></div>
+        <ul class="nav-links">
+            <li><a href="#fleet">Fleet</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#why-us">Why Us</a></li>
+            <li><a href="#booking">Book Now</a></li>
+        </ul>
+        <a href="#booking" class="cta-btn">Reserve</a>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Lock Cars</h1>
+            <p>Premium rentals. Unmatched service. Drive in style.</p>
+            <div class="hero-btns">
+                <a href="#fleet" class="btn-primary">View Fleet</a>
+                <a href="#booking" class="btn-secondary">Book Now</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FLEET OVERVIEW -->
+    <section class="fleet" id="fleet">
+        <div class="section-header">
+            <h2>Our Fleet</h2>
+            <p>Choose from our premium selection of vehicles</p>
+        </div>
+        <div class="fleet-grid">
+            <div class="car-card">
+                <div class="car-img">🚗</div>
+                <div class="car-details">
+                    <div class="car-title">
+                        <h3>Tesla Model 3</h3>
+                        <span class="type">Electric</span>
+                    </div>
+                    <div class="car-features">
+                        <span><i class="fas fa-tachometer-alt"></i> 272 mi range</span>
+                        <span><i class="fas fa-bolt"></i> 0-60: 5.3s</span>
+                        <span><i class="fas fa-user"></i> 5 seats</span>
+                    </div>
+                    <div class="car-footer">
+                        <div class="car-price">$89<span>/day</span></div>
+                        <a href="#booking" class="book-btn">Book</a>
+                    </div>
+                </div>
+            </div>
+            <div class="car-card">
+                <div class="car-img">🏎️</div>
+                <div class="car-details">
+                    <div class="car-title">
+                        <h3>BMW M4 Competition</h3>
+                        <span class="type">Sport</span>
+                    </div>
+                    <div class="car-features">
+                        <span><i class="fas fa-horse"></i> 503 HP</span>
+                        <span><i class="fas fa-gauge-high"></i> 180 mph</span>
+                        <span><i class="fas fa-user"></i> 4 seats</span>
+                    </div>
+                    <div class="car-footer">
+                        <div class="car-price">$199<span>/day</span></div>
+                        <a href="#booking" class="book-btn">Book</a>
+                    </div>
+                </div>
+            </div>
+            <div class="car-card">
+                <div class="car-img">🚙</div>
+                <div class="car-details">
+                    <div class="car-title">
+                        <h3>Mercedes GLE 450</h3>
+                        <span class="type">SUV</span>
+                    </div>
+                    <div class="car-features">
+                        <span><i class="fas fa-road"></i> AWD</span>
+                        <span><i class="fas fa-snowflake"></i> 4MATIC</span>
+                        <span><i class="fas fa-user"></i> 7 seats</span>
+                    </div>
+                    <div class="car-footer">
+                        <div class="car-price">$149<span>/day</span></div>
+                        <a href="#booking" class="book-btn">Book</a>
+                    </div>
+                </div>
+            </div>
+            <div class="car-card">
+                <div class="car-img">🚕</div>
+                <div class="car-details">
+                    <div class="car-title">
+                        <h3>Tesla Model S Plaid</h3>
+                        <span class="type">Electric</span>
+                    </div>
+                    <div class="car-features">
+                        <span><i class="fas fa-tachometer-alt"></i> 396 mi range</span>
+                        <span><i class="fas fa-bolt"></i> 0-60: 1.99s</span>
+                        <span><i class="fas fa-user"></i> 5 seats</span>
+                    </div>
+                    <div class="car-footer">
+                        <div class="car-price">$249<span>/day</span></div>
+                        <a href="#booking" class="book-btn">Book</a>
+                    </div>
+                </div>
+            </div>
+            <div class="car-card">
+                <div class="car-img">🚘</div>
+                <div class="car-details">
+                    <div class="car-title">
+                        <h3>Porsche 911 Carrera</h3>
+                        <span class="type">Sport</span>
+                    </div>
+                    <div class="car-features">
+                        <span><i class="fas fa-horse"></i> 379 HP</span>
+                        <span><i class="fas fa-gauge-high"></i> 180 mph</span>
+                        <span><i class="fas fa-user"></i> 4 seats</span>
+                    </div>
+                    <div class="car-footer">
+                        <div class="car-price">$279<span>/day</span></div>
+                        <a href="#booking" class="book-btn">Book</a>
+                    </div>
+                </div>
+            </div>
+            <div class="car-card">
+                <div class="car-img">🚌</div>
+                <div class="car-details">
+                    <div class="car-title">
+                        <h3>Cadillac Escalade</h3>
+                        <span class="type">Luxury SUV</span>
+                    </div>
+                    <div class="car-features">
+                        <span><i class="fas fa-road"></i> 4WD</span>
+                        <span><i class="fas fa-snowflake"></i> Premium</span>
+                        <span><i class="fas fa-user"></i> 7 seats</span>
+                    </div>
+                    <div class="car-footer">
+                        <div class="car-price">$179<span>/day</span></div>
+                        <a href="#booking" class="book-btn">Book</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRICING SECTION -->
+    <section class="pricing" id="pricing">
+        <div class="section-header">
+            <h2>Pricing Plans</h2>
+            <p>Simple, transparent pricing with no hidden fees</p>
+        </div>
+        <div class="pricing-grid">
+            <div class="price-card">
+                <h3>Daily</h3>
+                <p class="subtitle">Perfect for short trips</p>
+                <div class="price-amount">$49<span>/day</span></div>
+                <p class="price-period">Minimum 1 day</p>
+                <ul class="price-features">
+                    <li><i class="fas fa-check"></i> 100 miles included</li>
+                    <li><i class="fas fa-check"></i> Basic insurance</li>
+                    <li><i class="fas fa-check"></i> 24/7 support</li>
+                    <li><i class="fas fa-check"></i> No hidden fees</li>
+                </ul>
+                <a href="#booking" class="price-btn">Select Plan</a>
+            </div>
+            <div class="price-card featured">
+                <h3>Weekly</h3>
+                <p class="subtitle">Best value for longer trips</p>
+                <div class="price-amount">$299<span>/week</span></div>
+                <p class="price-period">Save 14% vs daily</p>
+                <ul class="price-features">
+                    <li><i class="fas fa-check"></i> 700 miles included</li>
+                    <li><i class="fas fa-check"></i> Premium insurance</li>
+                    <li><i class="fas fa-check"></i> Free cancellation</li>
+                    <li><i class="fas fa-check"></i> Airport pickup</li>
+                </ul>
+                <a href="#booking" class="price-btn">Select Plan</a>
+            </div>
+            <div class="price-card">
+                <h3>Monthly</h3>
+                <p class="subtitle">For extended rentals</p>
+                <div class="price-amount">$999<span>/month</span></div>
+                <p class="price-period">Save 33% vs daily</p>
+                <ul class="price-features">
+                    <li><i class="fas fa-check"></i> Unlimited miles</li>
+                    <li><i class="fas fa-check"></i> Full coverage</li>
+                    <li><i class="fas fa-check"></i> Priority support</li>
+                    <li><i class="fas fa-check"></i> Concierge service</li>
+                </ul>
+                <a href="#booking" class="price-btn">Select Plan</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- WHY CHOOSE US -->
+    <section class="why-us" id="why-us">
+        <div class="section-header">
+            <h2>Why Choose Lock Cars</h2>
+            <p>We go the extra mile for you</p>
+        </div>
+        <div class="why-grid">
+            <div class="why-card">
+                <div class="why-icon"><i class="fas fa-key"></i></div>
+                <h3>Quick Pickup</h3>
+                <p>Skip the counter. Direct pickup from location of your choice.</p>
+            </div>
+            <div class="why-card">
+                <div class="why-icon"><i class="fas fa-shield-alt"></i></div>
+                <h3>Fully Insured</h3>
+                <p>Every rental includes comprehensive insurance coverage.</p>
+            </div>
+            <div class="why-card">
+                <div class="why-icon"><i class="fas fa-road"></i></div>
+                <h3>Unlimited Miles</h3>
+                <p>Drive as much as you want with our premium plans.</p>
+            </div>
+            <div class="why-card">
+                <div class="why-icon"><i class="fas fa-headset"></i></div>
+                <h3>24/7 Support</h3>
+                <p>Round-the-clock assistance whenever you need it.</p>
+            </div>
+            <div class="why-card">
+                <div class="why-icon"><i class="fas fa-percent"></i></div>
+                <h3>Best Price Guarantee</h3>
+                <p>We match any competitor's price within 24 hours.</p>
+            </div>
+            <div class="why-card">
+                <div class="why-icon"><i class="fas fa-car"></i></div>
+                <h3>Premium Fleet</h3>
+                <p>Newest models, meticulously maintained vehicles.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- BOOKING FORM -->
+    <section class="booking" id="booking">
+        <div class="section-header">
+            <h2>Book Your Ride</h2>
+            <p>Reserve your vehicle in just a few clicks</p>
+        </div>
+        <div class="booking-container">
+            <form class="booking-form">
+                <div class="form-group">
+                    <label for="pickup-location">Pickup Location</label>
+                    <select id="pickup-location">
+                        <option value="">Select location...</option>
+                        <option value="airport">Airport</option>
+                        <option value="downtown">Downtown</option>
+                        <option value="hotel">Hotel Delivery</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="dropoff-location">Dropoff Location</label>
+                    <select id="dropoff-location">
+                        <option value="">Select location...</option>
+                        <option value="same">Same as pickup</option>
+                        <option value="airport">Airport</option>
+                        <option value="downtown">Downtown</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="pickup-date">Pickup Date</label>
+                    <input type="date" id="pickup-date">
+                </div>
+                <div class="form-group">
+                    <label for="pickup-time">Pickup Time</label>
+                    <input type="time" id="pickup-time">
+                </div>
+                <div class="form-group">
+                    <label for="vehicle-type">Vehicle Type</label>
+                    <select id="vehicle-type">
+                        <option value="">Select vehicle...</option>
+                        <option value="tesla3">Tesla Model 3 - $89/day</option>
+                        <option value="bmwm4">BMW M4 - $199/day</option>
+                        <option value="gle">Mercedes GLE - $149/day</option>
+                        <option value="modelS">Tesla Model S - $249/day</option>
+                        <option value="porsche">Porsche 911 - $279/day</option>
+                        <option value="escalade">Cadillac Escalade - $179/day</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="plan-type">Plan Type</label>
+                    <select id="plan-type">
+                        <option value="">Select plan...</option>
+                        <option value="daily">Daily - $49/day</option>
+                        <option value="weekly">Weekly - $299/week</option>
+                        <option value="monthly">Monthly - $999/month</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" placeholder="Your full name">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone</label>
+                    <input type="tel" id="phone" placeholder="(555) 123-4567">
+                </div>
+                <div class="form-group">
+                    <label for="requests">Special Requests</label>
+                    <textarea id="requests" rows="3" placeholder="Any special requests or requirements?"></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Complete Reservation</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-logo">Lock <span>Cars</span></div>
+        <p class="footer-tagline">Premium car rentals. Exceptional service.</p>
+        <p class="footer-copyright">© Psychout Media 2026. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Form submission
+        document.querySelector('.booking-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Thank you for your reservation! We\'ll confirm your booking shortly.');
+            this.reset();
+        });
+    </script>
+</body>
+</html>
