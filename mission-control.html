@@ -89,6 +89,24 @@
             object-fit: contain;
         }
 
+        .welcome-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.25rem;
+            text-align: right;
+        }
+        .welcome-greeting {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+        .welcome-datetime {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            font-variant-numeric: tabular-nums;
+        }
+
         .sync-status {
             font-size: 0.75rem;
             color: #4ade80;
@@ -496,6 +514,433 @@
 
         .tab-content.active {
             display: block;
+        }
+
+        /* ─── Intelligence Tab ──────────────────────────────────────── */
+        .intel-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        @media (max-width: 900px) {
+            .intel-grid { grid-template-columns: 1fr; }
+        }
+        .intel-panel { margin-bottom: 0; }
+        .intel-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #c4b5fd;
+            user-select: none;
+        }
+        .intel-panel-header:hover { background: rgba(139, 92, 246, 0.08); }
+        .intel-chevron {
+            font-size: 0.65rem;
+            transition: transform 0.2s;
+            color: #6b7280;
+        }
+        .intel-chevron.collapsed { transform: rotate(-90deg); }
+        .intel-panel-body {
+            padding: 0.75rem 1rem;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .intel-panel-body.collapsed {
+            max-height: 0 !important;
+            padding: 0 1rem;
+            overflow: hidden;
+        }
+        .intel-empty {
+            color: #6b7280;
+            font-size: 0.75rem;
+            text-align: center;
+            padding: 1.5rem 0;
+            font-style: italic;
+        }
+
+        /* Matrix grid */
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: auto repeat(3, 1fr);
+            gap: 2px;
+            font-size: 0.7rem;
+            margin-bottom: 1rem;
+        }
+        .matrix-header {
+            font-weight: 600;
+            color: #9ca3af;
+            text-align: center;
+            padding: 0.4rem 0.3rem;
+        }
+        .matrix-label {
+            font-weight: 600;
+            color: #c4b5fd;
+            padding: 0.4rem 0.5rem 0.4rem 0;
+            text-align: right;
+        }
+        .matrix-cell {
+            text-align: center;
+            padding: 0.4rem 0.3rem;
+            border-radius: 0.25rem;
+            font-weight: 600;
+        }
+        .matrix-cell.rate-high { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+        .matrix-cell.rate-mid { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+        .matrix-cell.rate-low { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+        .matrix-cell.rate-none { background: rgba(255, 255, 255, 0.03); color: #4b5563; }
+
+        /* Ranked patterns */
+        .ranked-pattern {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.4rem 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.75rem;
+        }
+        .ranked-pattern:last-child { border-bottom: none; }
+        .reliable-badge {
+            display: inline-block;
+            background: rgba(74, 222, 128, 0.15);
+            color: #4ade80;
+            font-size: 0.6rem;
+            font-weight: 600;
+            padding: 0.15rem 0.5rem;
+            border-radius: 0.75rem;
+            margin-left: 0.5rem;
+        }
+
+        /* Decomposition table */
+        .decomp-table {
+            width: 100%;
+            font-size: 0.7rem;
+            border-collapse: collapse;
+        }
+        .decomp-table th {
+            text-align: left;
+            color: #9ca3af;
+            font-weight: 600;
+            padding: 0.4rem 0.3rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .decomp-table td {
+            padding: 0.4rem 0.3rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            color: #d1d5db;
+        }
+        .quality-badge {
+            display: inline-block;
+            padding: 0.1rem 0.4rem;
+            border-radius: 0.5rem;
+            font-size: 0.6rem;
+            font-weight: 600;
+        }
+        .quality-badge.high { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+        .quality-badge.mid { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+        .quality-badge.low { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+        /* Quality trend bars */
+        .quality-trend {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 40px;
+            margin-bottom: 0.75rem;
+        }
+        .quality-bar {
+            flex: 1;
+            border-radius: 2px 2px 0 0;
+            min-width: 8px;
+            transition: height 0.3s;
+        }
+
+        /* Sparkline bars */
+        .sparkline {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 30px;
+        }
+        .sparkline-bar {
+            flex: 1;
+            background: rgba(139, 92, 246, 0.4);
+            border-radius: 1px 1px 0 0;
+            min-width: 4px;
+            transition: height 0.3s;
+        }
+
+        /* Agent profile cards */
+        .agent-profile-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        .profile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .profile-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .profile-role {
+            font-size: 0.65rem;
+            color: #6b7280;
+        }
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            font-size: 0.65rem;
+            margin-top: 0.5rem;
+        }
+        .profile-stat-value {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+        .profile-stat-label {
+            color: #6b7280;
+            margin-top: 0.1rem;
+        }
+
+        /* Prompt textarea */
+        .prompt-textarea {
+            width: 100%;
+            min-height: 150px;
+            max-height: 300px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            color: #d1d5db;
+            font-family: 'Courier New', monospace;
+            font-size: 0.65rem;
+            line-height: 1.4;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        .prompt-textarea:focus {
+            outline: none;
+            border-color: #8b5cf6;
+        }
+        .prompt-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            align-items: center;
+        }
+        .prompt-version {
+            font-size: 0.65rem;
+            color: #6b7280;
+            margin-left: auto;
+        }
+        .prompt-save-status {
+            font-size: 0.65rem;
+            color: #4ade80;
+            display: none;
+        }
+
+        /* Handoff quality bars */
+        .handoff-quality-item {
+            margin-bottom: 0.5rem;
+        }
+        .handoff-quality-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: #9ca3af;
+            margin-bottom: 0.2rem;
+        }
+        .handoff-quality-bar {
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.05);
+            overflow: hidden;
+        }
+        .handoff-quality-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s;
+        }
+
+        /* Pattern cards */
+        .pattern-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 0.5rem;
+            padding: 0.6rem 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        .pattern-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .pattern-name {
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #e5e7eb;
+        }
+        .pattern-chain {
+            font-size: 0.7rem;
+            color: #a78bfa;
+            margin-top: 0.25rem;
+        }
+        .pattern-desc {
+            font-size: 0.65rem;
+            color: #6b7280;
+            margin-top: 0.2rem;
+        }
+
+        /* Health grid */
+        .health-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .health-stat {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 0.375rem;
+            padding: 0.6rem;
+            text-align: center;
+        }
+        .health-stat-value {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #e5e7eb;
+        }
+        .health-stat-label {
+            font-size: 0.6rem;
+            color: #6b7280;
+            margin-top: 0.15rem;
+        }
+
+        /* Event log */
+        .event-log {
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.65rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+        }
+        .event-item {
+            padding: 0.2rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            color: #9ca3af;
+        }
+        .event-item .event-time { color: #6b7280; }
+        .event-item .event-type { color: #a78bfa; font-weight: 600; }
+        .event-item .event-detail { color: #d1d5db; }
+
+        /* Save pattern form */
+        .save-pattern-form {
+            background: rgba(139, 92, 246, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+        }
+        .save-pattern-form input, .save-pattern-form textarea {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e5e7eb;
+            padding: 0.4rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            margin-top: 0.3rem;
+            box-sizing: border-box;
+        }
+
+        /* Board Picker */
+        .board-picker {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .board-pill {
+            padding: 0.4rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #9ca3af;
+            border-radius: 2rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .board-pill:hover {
+            background: rgba(139, 92, 246, 0.15);
+            color: #e0e0e0;
+        }
+        .board-pill.active {
+            background: rgba(139, 92, 246, 0.3);
+            border-color: #8b5cf6;
+            color: #c4b5fd;
+        }
+        .board-pill-add {
+            padding: 0.4rem 0.8rem;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px dashed rgba(139, 92, 246, 0.4);
+            color: #8b5cf6;
+            border-radius: 2rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .board-pill-add:hover {
+            background: rgba(139, 92, 246, 0.25);
+            border-style: solid;
+        }
+        .board-actions {
+            display: flex;
+            gap: 0.4rem;
+            margin-left: 0.5rem;
+        }
+        .board-action-btn {
+            padding: 0.3rem 0.6rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #9ca3af;
+            border-radius: 0.3rem;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+        .board-action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+        }
+        .board-action-btn.danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: #ef4444;
+            color: #fca5a5;
+        }
+        .board-name-input {
+            padding: 0.4rem 0.8rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #8b5cf6;
+            color: #e0e0e0;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            outline: none;
+            width: 140px;
         }
 
         /* Command Centre */
@@ -2342,7 +2787,11 @@
                 <img class="logo-icon" src="logo.png" alt="Automa Dynamics">
                 <span class="logo-text">Automa Dynamics<span class="logo-sub">Mission Control</span></span>
             </div>
-            <div style="display: flex; gap: 1rem; align-items: center;">
+            <div style="display: flex; gap: 1.5rem; align-items: center;">
+                <div class="welcome-bar" id="welcomeBar">
+                    <span class="welcome-greeting" id="welcomeGreeting"></span>
+                    <span class="welcome-datetime" id="welcomeDatetime"></span>
+                </div>
                 <button class="btn" onclick="refreshCurrentTab()">Refresh</button>
             </div>
         </header>
@@ -2369,9 +2818,11 @@
         <div class="tabs">
             <button class="tab-btn active" data-tab="kanban" onclick="switchTab('kanban')">Kanban</button>
             <button class="tab-btn" data-tab="command" onclick="switchTab('command')">Command Centre</button>
+            <button class="tab-btn" data-tab="intelligence" onclick="switchTab('intelligence')">Intelligence <span id="intel-badge" style="display:none;font-size:0.7rem;background:rgba(139,92,246,0.3);padding:0.1rem 0.4rem;border-radius:0.5rem;margin-left:0.3rem;"></span></button>
         </div>
 
         <div class="tab-content active" id="tab-kanban">
+            <div class="board-picker" id="boardPicker"></div>
             <div class="toolbar">
                 <button class="btn btn-primary" onclick="showNewTaskModal()">+ New task</button>
                 <button class="btn" onclick="toggleFilters()">Filter</button>
@@ -2553,6 +3004,77 @@
         </div>
     </div>
 
+        <!-- Intelligence Tab -->
+        <div class="tab-content" id="tab-intelligence">
+            <div class="intel-grid">
+                <!-- Panel 1: Pipeline Success Matrix -->
+                <div class="activity-panel intel-panel">
+                    <div class="intel-panel-header" onclick="toggleIntelPanel('pipeline-matrix')">
+                        <span>Pipeline Success Matrix</span>
+                        <span class="intel-chevron" id="chevron-pipeline-matrix">&#9660;</span>
+                    </div>
+                    <div class="intel-panel-body" id="body-pipeline-matrix">
+                        <div id="intel-pipeline-matrix"><div class="intel-empty">No pipeline data yet. Run a pipeline to see success patterns.</div></div>
+                    </div>
+                </div>
+
+                <!-- Panel 2: Decomposition Tracker -->
+                <div class="activity-panel intel-panel">
+                    <div class="intel-panel-header" onclick="toggleIntelPanel('decomp-tracker')">
+                        <span>Decomposition Quality</span>
+                        <span class="intel-chevron" id="chevron-decomp-tracker">&#9660;</span>
+                    </div>
+                    <div class="intel-panel-body" id="body-decomp-tracker">
+                        <div id="intel-decomp-tracker"><div class="intel-empty">No decompositions yet. Use the Command Bar to create one.</div></div>
+                    </div>
+                </div>
+
+                <!-- Panel 3: Agent Profiles -->
+                <div class="activity-panel intel-panel">
+                    <div class="intel-panel-header" onclick="toggleIntelPanel('agent-profiles')">
+                        <span>Agent Profiles</span>
+                        <span class="intel-chevron" id="chevron-agent-profiles">&#9660;</span>
+                    </div>
+                    <div class="intel-panel-body" id="body-agent-profiles">
+                        <div id="intel-agent-profiles"><div class="intel-empty">No agent data yet.</div></div>
+                    </div>
+                </div>
+
+                <!-- Panel 4: Prompt Engine + Handoff Quality -->
+                <div class="activity-panel intel-panel">
+                    <div class="intel-panel-header" onclick="toggleIntelPanel('prompt-engine')">
+                        <span>Prompt Engine & Handoff Quality</span>
+                        <span class="intel-chevron" id="chevron-prompt-engine">&#9660;</span>
+                    </div>
+                    <div class="intel-panel-body" id="body-prompt-engine">
+                        <div id="intel-prompt-engine"><div class="intel-empty">Loading...</div></div>
+                    </div>
+                </div>
+
+                <!-- Panel 5: Pattern Library -->
+                <div class="activity-panel intel-panel">
+                    <div class="intel-panel-header" onclick="toggleIntelPanel('pattern-library')">
+                        <span>Pattern Library</span>
+                        <span class="intel-chevron" id="chevron-pattern-library">&#9660;</span>
+                    </div>
+                    <div class="intel-panel-body" id="body-pattern-library">
+                        <div id="intel-pattern-library"><div class="intel-empty">Loading...</div></div>
+                    </div>
+                </div>
+
+                <!-- Panel 6: System Health -->
+                <div class="activity-panel intel-panel">
+                    <div class="intel-panel-header" onclick="toggleIntelPanel('system-health')">
+                        <span>System Health</span>
+                        <span class="intel-chevron" id="chevron-system-health">&#9660;</span>
+                    </div>
+                    <div class="intel-panel-body" id="body-system-health">
+                        <div id="intel-system-health"><div class="intel-empty">Loading...</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     <div class="modal" id="newTaskModal">
         <div class="modal-content">
             <div class="modal-header">Create New Task</div>
@@ -2624,6 +3146,39 @@
         </div>
     </div>
 
+    <!-- Board name modal (create / rename) -->
+    <div class="modal" id="boardNameModal">
+        <div class="modal-content">
+            <div class="modal-header" id="boardNameModalHeader">New Board</div>
+            <form id="boardNameForm" onsubmit="submitBoardNameModal(event)">
+                <div class="form-group">
+                    <label class="form-label">Board Name</label>
+                    <input type="text" class="form-input" id="boardNameInput" required placeholder="e.g. Sprint 2, Ideas, Archive">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn" onclick="closeModal('boardNameModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="boardNameSubmitBtn">Create Board</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Board delete confirmation modal -->
+    <div class="modal" id="deleteBoardModal">
+        <div class="modal-content">
+            <div class="modal-header">Delete Board</div>
+            <div class="modal-message">
+                Are you sure you want to delete <span class="task-name" id="deleteBoardName"></span>?
+                <br><br>
+                All tasks on this board will be permanently lost.
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn" onclick="closeModal('deleteBoardModal')">Cancel</button>
+                <button type="button" class="btn btn-danger-large" onclick="confirmDeleteBoard()">Delete Board</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Themed toast notification -->
     <div class="toast-container" id="toastOverlay">
         <div class="toast-box">
@@ -2682,6 +3237,8 @@
 
         let tasks = [];
         let activity = [];
+        let boards = [];
+        let activeBoardId = null;
         let currentFilter = { tag: '' };
         let draggedTaskId = null;
         let taskToDelete = null;
@@ -2756,6 +3313,9 @@
                 // Connect SSE for real-time updates, fallback to polling
                 connectSSE();
                 agentRefreshInterval = setInterval(() => loadAgents(), 5000);
+            } else if (tabName === 'intelligence') {
+                connectSSE();
+                loadIntelligenceTab();
             } else {
                 disconnectSSE();
             }
@@ -2821,6 +3381,18 @@
             if (data.pipelines) {
                 lastPipelines = data.pipelines;
                 renderPipelines(data.pipelines);
+            }
+
+            // Update intelligence badge
+            if (data.intelligence) {
+                const badge = document.getElementById('intel-badge');
+                if (badge) {
+                    const count = data.intelligence.decompCount + data.intelligence.patternCount;
+                    if (count > 0) {
+                        badge.textContent = `v${data.intelligence.promptVersion}`;
+                        badge.style.display = 'inline';
+                    }
+                }
             }
         }
 
@@ -4786,6 +5358,20 @@
             }
         }
 
+        // ─── Welcome Bar ──────────────────────────────────────────────────
+        function updateWelcomeBar() {
+            const now = new Date();
+            const hour = now.getHours();
+            const period = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+            document.getElementById('welcomeGreeting').textContent = `Good ${period}, Mark`;
+            const opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            const date = now.toLocaleDateString('en-GB', opts);
+            const time = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            document.getElementById('welcomeDatetime').textContent = `${date} · ${time}`;
+        }
+        updateWelcomeBar();
+        setInterval(updateWelcomeBar, 1000);
+
         function createStars() {
             const starsContainer = document.getElementById('stars');
             for (let i = 0; i < 100; i++) {
@@ -4802,21 +5388,32 @@
             try {
                 const response = await fetch(API_URL);
                 const data = await response.json();
-                tasks = data.tasks || [];
-                activity = data.activity || [];
-                
-                // Assign positions to tasks that don't have them
+                boards = data.boards || [];
+                activeBoardId = data.activeBoardId || (boards[0] && boards[0].id);
+
+                // Extract tasks/activity from active board
+                const activeBoard = boards.find(b => b.id === activeBoardId);
+                if (activeBoard) {
+                    tasks = activeBoard.tasks || [];
+                    activity = activeBoard.activity || [];
+                } else if (boards.length > 0) {
+                    // activeBoardId didn't match — fall back to first board
+                    activeBoardId = boards[0].id;
+                    tasks = boards[0].tasks || [];
+                    activity = boards[0].activity || [];
+                } else {
+                    tasks = [];
+                    activity = [];
+                }
+
+                // Assign positions to tasks that don't have them (local only, no save)
                 const columns = ['recurring', 'backlog', 'inprogress', 'review'];
                 columns.forEach(column => {
                     const columnTasks = tasks.filter(t => t.column === column && t.position === undefined);
-                    columnTasks.forEach((task, i) => {
-                        task.position = i;
-                    });
+                    columnTasks.forEach((task, i) => { task.position = i; });
                 });
-                
-                // Save updated positions
-                await saveData();
-                
+
+                renderBoardPicker();
                 renderTasks();
                 renderActivity();
             } catch (e) {
@@ -4826,13 +5423,159 @@
 
         async function saveData() {
             try {
+                // Write current tasks/activity back into the active board slot
+                const activeBoard = boards.find(b => b.id === activeBoardId);
+                if (activeBoard) {
+                    activeBoard.tasks = tasks;
+                    activeBoard.activity = activity;
+                }
                 await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tasks, activity })
+                    body: JSON.stringify({ boards, activeBoardId })
                 });
             } catch (e) {
                 console.error('Error saving data:', e);
+            }
+        }
+
+        // ─── Board Picker ─────────────────────────────────────────────────
+
+        function renderBoardPicker() {
+            const picker = document.getElementById('boardPicker');
+            if (!picker) return;
+            let html = '';
+            boards.forEach(b => {
+                const cls = b.id === activeBoardId ? 'board-pill active' : 'board-pill';
+                html += `<button class="${cls}" onclick="switchBoard('${b.id}')">${escapeHtml(b.name)}</button>`;
+            });
+            html += `<button class="board-pill-add" onclick="createBoard()">+</button>`;
+            html += `<span class="board-actions">`;
+            html += `<button class="board-action-btn" onclick="renameBoard()" title="Rename board">✎</button>`;
+            if (boards.length > 1) {
+                html += `<button class="board-action-btn danger" onclick="deleteBoard()" title="Delete board">🗑</button>`;
+            }
+            html += `</span>`;
+            picker.innerHTML = html;
+        }
+
+        async function switchBoard(id) {
+            if (id === activeBoardId) return;
+            // Save current board state first
+            await saveData();
+            activeBoardId = id;
+            const board = boards.find(b => b.id === id);
+            if (board) {
+                tasks = board.tasks || [];
+                activity = board.activity || [];
+            }
+            // Persist active board selection
+            await saveData();
+            renderBoardPicker();
+            renderTasks();
+            renderActivity();
+        }
+
+        // Board name modal state
+        let boardNameModalMode = 'create'; // 'create' or 'rename'
+
+        function createBoard() {
+            boardNameModalMode = 'create';
+            document.getElementById('boardNameModalHeader').textContent = 'New Board';
+            document.getElementById('boardNameSubmitBtn').textContent = 'Create Board';
+            document.getElementById('boardNameInput').value = '';
+            document.getElementById('boardNameModal').classList.add('active');
+            setTimeout(() => document.getElementById('boardNameInput').focus(), 100);
+        }
+
+        function renameBoard() {
+            const board = boards.find(b => b.id === activeBoardId);
+            if (!board) return;
+            boardNameModalMode = 'rename';
+            document.getElementById('boardNameModalHeader').textContent = 'Rename Board';
+            document.getElementById('boardNameSubmitBtn').textContent = 'Rename';
+            document.getElementById('boardNameInput').value = board.name;
+            document.getElementById('boardNameModal').classList.add('active');
+            setTimeout(() => {
+                const input = document.getElementById('boardNameInput');
+                input.focus();
+                input.select();
+            }, 100);
+        }
+
+        async function submitBoardNameModal(e) {
+            e.preventDefault();
+            const name = document.getElementById('boardNameInput').value.trim();
+            if (!name) return;
+            closeModal('boardNameModal');
+
+            if (boardNameModalMode === 'create') {
+                try {
+                    await saveData();
+                    const resp = await fetch('http://localhost:8888/boards', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name })
+                    });
+                    const data = await resp.json();
+                    if (data.error) { showToast('Error', data.error, 'error'); return; }
+                    boards = data.boards;
+                    activeBoardId = data.activeBoardId;
+                    const board = boards.find(b => b.id === activeBoardId);
+                    tasks = board ? board.tasks : [];
+                    activity = board ? board.activity : [];
+                    renderBoardPicker();
+                    renderTasks();
+                    renderActivity();
+                } catch (e) {
+                    console.error('Error creating board:', e);
+                }
+            } else {
+                try {
+                    const resp = await fetch(`http://localhost:8888/boards/${encodeURIComponent(activeBoardId)}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name })
+                    });
+                    const data = await resp.json();
+                    if (data.error) { showToast('Error', data.error, 'error'); return; }
+                    boards = data.boards;
+                    renderBoardPicker();
+                } catch (e) {
+                    console.error('Error renaming board:', e);
+                }
+            }
+        }
+
+        function deleteBoard() {
+            const board = boards.find(b => b.id === activeBoardId);
+            if (!board) return;
+            if (boards.length <= 1) {
+                showToast('Cannot Delete', 'You must have at least one board.', 'error');
+                return;
+            }
+            document.getElementById('deleteBoardName').textContent = board.name;
+            document.getElementById('deleteBoardModal').classList.add('active');
+        }
+
+        async function confirmDeleteBoard() {
+            closeModal('deleteBoardModal');
+            try {
+                const resp = await fetch(`http://localhost:8888/boards/${encodeURIComponent(activeBoardId)}`, {
+                    method: 'DELETE'
+                });
+                const data = await resp.json();
+                if (data.error) { showToast('Error', data.error, 'error'); return; }
+                boards = data.boards;
+                activeBoardId = data.activeBoardId;
+                const newBoard = boards.find(b => b.id === activeBoardId);
+                tasks = newBoard ? newBoard.tasks : [];
+                activity = newBoard ? newBoard.activity : [];
+                renderBoardPicker();
+                renderTasks();
+                renderActivity();
+            } catch (e) {
+                console.error('Error deleting board:', e);
             }
         }
 
@@ -4874,12 +5617,14 @@
         }
 
         function confirmExport() {
-            const data = { tasks, activity, exported: new Date().toISOString() };
+            const boardName = (boards.find(b => b.id === activeBoardId) || {}).name || 'board';
+            const safeName = boardName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            const data = { board: boardName, tasks, activity, exported: new Date().toISOString() };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `mission-control-${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `mission-control-${safeName}-${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             closeModal('exportModal');
         }
@@ -5187,6 +5932,501 @@
         // Initial load
         createStars();
         loadData();
+
+        // ─── Intelligence Tab ──────────────────────────────────────────────
+
+        function toggleIntelPanel(id) {
+            const body = document.getElementById(`body-${id}`);
+            const chevron = document.getElementById(`chevron-${id}`);
+            if (body && chevron) {
+                body.classList.toggle('collapsed');
+                chevron.classList.toggle('collapsed');
+            }
+        }
+
+        async function loadIntelligenceTab() {
+            await Promise.all([
+                loadPipelineMatrix(),
+                loadDecompTracker(),
+                loadAgentProfiles(),
+                loadPromptEngine(),
+                loadPatternLibrary(),
+                loadSystemHealth()
+            ]);
+        }
+
+        // ─── Panel 1: Pipeline Success Matrix ──────────────────────────
+        async function loadPipelineMatrix() {
+            try {
+                const res = await fetch('http://localhost:8888/api/intelligence/pipeline-stats');
+                const data = await res.json();
+                renderPipelineMatrix(data);
+            } catch (e) { console.error('[Intel] Pipeline matrix error:', e); }
+        }
+
+        function renderPipelineMatrix(data) {
+            const el = document.getElementById('intel-pipeline-matrix');
+            if (!data || data.totalPipelines === 0) {
+                el.innerHTML = '<div class="intel-empty">No pipeline data yet. Run a pipeline to see success patterns.</div>';
+                return;
+            }
+
+            const agents = ['newton', 'bronte', 'guido'];
+            const names = { newton: 'Newton', bronte: 'Bronte', guido: 'Guido' };
+
+            let html = '<div class="matrix-grid">';
+            html += '<div class="matrix-header"></div>';
+            agents.forEach(a => { html += `<div class="matrix-header">${names[a]}</div>`; });
+
+            agents.forEach(from => {
+                html += `<div class="matrix-label">${names[from]}</div>`;
+                agents.forEach(to => {
+                    const cell = data.matrix[from]?.[to] || { total: 0, success: 0 };
+                    const rate = cell.total > 0 ? Math.round((cell.success / cell.total) * 100) : -1;
+                    const cls = rate < 0 ? 'rate-none' : rate >= 75 ? 'rate-high' : rate >= 40 ? 'rate-mid' : 'rate-low';
+                    const text = rate < 0 ? '-' : `${rate}% (${cell.total})`;
+                    html += `<div class="matrix-cell ${cls}">${text}</div>`;
+                });
+            });
+            html += '</div>';
+
+            // Ranked patterns
+            if (data.ranked && data.ranked.length > 0) {
+                html += '<div style="font-size:0.75rem;font-weight:600;color:#9ca3af;margin:0.5rem 0 0.3rem;">Patterns</div>';
+                data.ranked.forEach(r => {
+                    const isMostReliable = data.mostReliable && r.pattern === data.mostReliable.pattern;
+                    html += `<div class="ranked-pattern">
+                        <span style="color:#c4b5fd;">${r.pattern}</span>
+                        <span>
+                            <span style="color:${r.rate >= 75 ? '#4ade80' : r.rate >= 40 ? '#fbbf24' : '#ef4444'}">${r.rate}%</span>
+                            <span style="color:#6b7280;margin-left:0.3rem;">(${r.total} runs)</span>
+                            ${isMostReliable ? '<span class="reliable-badge">Most Reliable</span>' : ''}
+                        </span>
+                    </div>`;
+                });
+            }
+
+            el.innerHTML = html;
+        }
+
+        // ─── Panel 2: Decomposition Tracker ─────────────────────────────
+        async function loadDecompTracker() {
+            try {
+                const res = await fetch('http://localhost:8888/api/intelligence/decomposition-log');
+                const data = await res.json();
+                renderDecompTracker(data.log || []);
+            } catch (e) { console.error('[Intel] Decomp tracker error:', e); }
+        }
+
+        function renderDecompTracker(log) {
+            const el = document.getElementById('intel-decomp-tracker');
+            if (log.length === 0) {
+                el.innerHTML = '<div class="intel-empty">No decompositions yet. Use the Command Bar to create one.</div>';
+                return;
+            }
+
+            // Quality trend bars (last 10)
+            const recent = log.slice(0, 10).reverse();
+            let html = '<div style="font-size:0.65rem;color:#6b7280;margin-bottom:0.2rem;">Quality Trend (last 10)</div>';
+            html += '<div class="quality-trend">';
+            recent.forEach(d => {
+                const score = d.score != null ? d.score : 25;
+                const color = score >= 75 ? '#4ade80' : score >= 40 ? '#fbbf24' : '#ef4444';
+                html += `<div class="quality-bar" style="height:${Math.max(score, 5)}%;background:${color};" title="${d.goal?.substring(0, 50)} — ${score}pts"></div>`;
+            });
+            html += '</div>';
+
+            // Table
+            html += '<div style="max-height:200px;overflow-y:auto;"><table class="decomp-table"><thead><tr>';
+            html += '<th>Goal</th><th>Method</th><th>Tasks</th><th>Outcome</th><th>Score</th>';
+            html += '</tr></thead><tbody>';
+            log.slice(0, 20).forEach(d => {
+                const scoreCls = (d.score || 0) >= 75 ? 'high' : (d.score || 0) >= 40 ? 'mid' : 'low';
+                const outcomeColor = d.outcome === 'completed' ? '#4ade80' : d.outcome === 'error' ? '#ef4444' : '#6b7280';
+                html += `<tr>
+                    <td title="${(d.goal || '').replace(/"/g, '&quot;')}">${(d.goal || '').substring(0, 40)}${(d.goal || '').length > 40 ? '...' : ''}</td>
+                    <td><span style="color:${d.method === 'json' ? '#4ade80' : '#fbbf24'}">${d.method}</span></td>
+                    <td>${d.taskCount || 0}</td>
+                    <td style="color:${outcomeColor}">${d.outcome || 'pending'}</td>
+                    <td>${d.score != null ? `<span class="quality-badge ${scoreCls}">${d.score}</span>` : '-'}</td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+
+            el.innerHTML = html;
+        }
+
+        // ─── Panel 3: Agent Profiles ─────────────────────────────────────
+        async function loadAgentProfiles() {
+            try {
+                const res = await fetch('http://localhost:8888/api/intelligence/agent-profiles');
+                const data = await res.json();
+                renderAgentProfiles(data.profiles || []);
+            } catch (e) { console.error('[Intel] Agent profiles error:', e); }
+        }
+
+        function renderAgentProfiles(profiles) {
+            const el = document.getElementById('intel-agent-profiles');
+            if (profiles.length === 0) {
+                el.innerHTML = '<div class="intel-empty">No agent data yet.</div>';
+                return;
+            }
+
+            const colors = { newton: '#60a5fa', bronte: '#f472b6', guido: '#4ade80' };
+            let html = '';
+            profiles.forEach(p => {
+                const color = colors[p.id] || '#a78bfa';
+                const perf = p.performance || { taskCount: 0, successRate: 0, avgDurationMs: 0, errors: 0 };
+                const rateColor = perf.successRate >= 80 ? '#4ade80' : perf.successRate >= 50 ? '#fbbf24' : '#ef4444';
+                const dailyVol = p.dailyVolume || [0,0,0,0,0,0,0];
+                const maxVol = Math.max(...dailyVol, 1);
+
+                html += `<div class="agent-profile-card" style="border-left:3px solid ${color};">
+                    <div class="profile-header">
+                        <div>
+                            <div class="profile-name" style="color:${color}">${p.name}</div>
+                            <div class="profile-role">${p.role} &middot; ${p.currentModel}</div>
+                        </div>
+                        <div class="sparkline">
+                            ${dailyVol.map(v => `<div class="sparkline-bar" style="height:${Math.max((v / maxVol) * 100, 4)}%;background:${color}40;"></div>`).join('')}
+                        </div>
+                    </div>
+                    <div class="profile-stats">
+                        <div><div class="profile-stat-value">${perf.taskCount}</div><div class="profile-stat-label">Tasks</div></div>
+                        <div><div class="profile-stat-value" style="color:${rateColor}">${perf.successRate}%</div><div class="profile-stat-label">Success</div></div>
+                        <div><div class="profile-stat-value">${perf.avgDurationMs > 0 ? Math.round(perf.avgDurationMs / 1000) + 's' : '-'}</div><div class="profile-stat-label">Avg Time</div></div>
+                        <div><div class="profile-stat-value">${(p.tokens?.totalCost || 0) > 0 ? '$' + p.tokens.totalCost.toFixed(3) : '-'}</div><div class="profile-stat-label">Cost</div></div>
+                    </div>
+                    ${Object.keys(p.taskTypes || {}).length > 0 ? `<div style="margin-top:0.4rem;font-size:0.6rem;color:#6b7280;">
+                        ${Object.entries(p.taskTypes).map(([type, count]) => `<span style="background:rgba(255,255,255,0.05);padding:0.1rem 0.4rem;border-radius:0.25rem;margin-right:0.3rem;">${type}: ${count}</span>`).join('')}
+                    </div>` : ''}
+                </div>`;
+            });
+            el.innerHTML = html;
+        }
+
+        // ─── Panel 4: Prompt Engine + Handoff Quality ───────────────────
+        let currentPromptData = null;
+
+        async function loadPromptEngine() {
+            try {
+                const [promptRes, handoffRes] = await Promise.all([
+                    fetch('http://localhost:8888/api/intelligence/astra-prompt'),
+                    fetch('http://localhost:8888/api/intelligence/handoff-quality')
+                ]);
+                const promptData = await promptRes.json();
+                const handoffData = await handoffRes.json();
+                currentPromptData = promptData;
+                renderPromptEngine(promptData, handoffData);
+            } catch (e) { console.error('[Intel] Prompt engine error:', e); }
+        }
+
+        function renderPromptEngine(promptData, handoffData) {
+            const el = document.getElementById('intel-prompt-engine');
+            let html = '';
+
+            // Section A: Astra Prompt Editor
+            html += '<div style="font-size:0.75rem;font-weight:600;color:#9ca3af;margin-bottom:0.3rem;">Astra Decomposition Prompt</div>';
+            html += `<textarea class="prompt-textarea" id="astraPromptTextarea">${escapeHtml(promptData.current || '')}</textarea>`;
+            html += '<div class="prompt-actions">';
+            html += `<button class="btn btn-primary" style="font-size:0.65rem;padding:0.3rem 0.6rem;" onclick="applyAstraPrompt()">Save Prompt</button>`;
+            html += `<button class="btn" style="font-size:0.65rem;padding:0.3rem 0.6rem;" onclick="resetAstraPrompt()">Reset to Default</button>`;
+            html += `<span class="prompt-save-status" id="promptSaveStatus">Saved!</span>`;
+            html += `<span class="prompt-version">v${promptData.version}${promptData.isDefault ? ' (default)' : ' (custom)'}</span>`;
+            html += '</div>';
+
+            // Recent decomps
+            if (promptData.recentDecomps && promptData.recentDecomps.length > 0) {
+                html += '<div style="font-size:0.7rem;font-weight:600;color:#9ca3af;margin:0.75rem 0 0.3rem;">Recent Decompositions</div>';
+                promptData.recentDecomps.forEach(d => {
+                    const scoreColor = (d.score || 0) >= 75 ? '#4ade80' : (d.score || 0) >= 40 ? '#fbbf24' : '#6b7280';
+                    html += `<div style="font-size:0.65rem;padding:0.25rem 0;border-bottom:1px solid rgba(255,255,255,0.03);color:#d1d5db;">
+                        <span style="color:${d.method === 'json' ? '#4ade80' : '#fbbf24'}">[${d.method}]</span>
+                        ${(d.goal || '').substring(0, 50)} &rarr; ${d.taskCount} tasks
+                        ${d.score != null ? `<span style="color:${scoreColor};margin-left:0.3rem;">${d.score}pts</span>` : ''}
+                    </div>`;
+                });
+            }
+
+            // Section B: Handoff Quality
+            html += '<div style="font-size:0.75rem;font-weight:600;color:#9ca3af;margin:1rem 0 0.3rem;">Handoff Quality Monitor</div>';
+            const handoffs = handoffData.handoffs || [];
+            if (handoffs.length === 0) {
+                html += '<div class="intel-empty" style="padding:0.5rem 0;">No handoffs yet. Complete a multi-step pipeline to see quality data.</div>';
+            } else {
+                handoffs.slice(0, 8).forEach(h => {
+                    const fillColor = h.quality.score >= 75 ? '#4ade80' : h.quality.score >= 40 ? '#fbbf24' : '#ef4444';
+                    html += `<div class="handoff-quality-item">
+                        <div class="handoff-quality-label">
+                            <span>${h.fromAgent} &rarr; ${h.toAgent}</span>
+                            <span>${h.quality.score}/100 &middot; ${h.findingsCount} findings &middot; ${h.confidence}</span>
+                        </div>
+                        <div class="handoff-quality-bar">
+                            <div class="handoff-quality-fill" style="width:${h.quality.score}%;background:${fillColor};"></div>
+                        </div>
+                        <div style="font-size:0.6rem;color:#6b7280;margin-top:0.15rem;">${h.summary}</div>
+                    </div>`;
+                });
+            }
+
+            el.innerHTML = html;
+        }
+
+        async function applyAstraPrompt() {
+            const textarea = document.getElementById('astraPromptTextarea');
+            if (!textarea) return;
+            try {
+                const res = await fetch('http://localhost:8888/api/intelligence/astra-prompt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: textarea.value, source: 'user' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const status = document.getElementById('promptSaveStatus');
+                    status.style.display = 'inline';
+                    status.textContent = `Saved! v${data.version}`;
+                    setTimeout(() => { status.style.display = 'none'; }, 3000);
+                    // Refresh version display
+                    const versionEl = document.querySelector('.prompt-version');
+                    if (versionEl) versionEl.textContent = `v${data.version}${data.isDefault ? ' (default)' : ' (custom)'}`;
+                }
+            } catch (e) {
+                showToast('Error', 'Failed to save prompt: ' + e.message, 'error');
+            }
+        }
+
+        async function resetAstraPrompt() {
+            try {
+                const res = await fetch('http://localhost:8888/api/intelligence/astra-prompt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: null, source: 'reset' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    await loadPromptEngine(); // reload to get default text
+                    showToast('Prompt Reset', 'Astra prompt restored to default', 'success');
+                }
+            } catch (e) {
+                showToast('Error', 'Failed to reset prompt: ' + e.message, 'error');
+            }
+        }
+
+        // ─── Panel 5: Pattern Library ────────────────────────────────────
+        const PRESET_PATTERNS = [
+            { id: 'preset-1', name: 'Research & Write', description: 'Newton researches, Bronte writes', steps: [{ agentId: 'newton', taskTemplate: 'Research the following topic thoroughly: {{input}}' }, { agentId: 'bronte', taskTemplate: 'Write a compelling article based on this research: {{input}}' }] },
+            { id: 'preset-2', name: 'Research & Build', description: 'Newton researches, Guido builds', steps: [{ agentId: 'newton', taskTemplate: 'Research the following topic thoroughly: {{input}}' }, { agentId: 'guido', taskTemplate: 'Build a working implementation based on this research: {{input}}' }] },
+            { id: 'preset-3', name: 'Full Pipeline', description: 'Newton researches, Bronte writes, Guido builds', steps: [{ agentId: 'newton', taskTemplate: 'Research the following topic thoroughly: {{input}}' }, { agentId: 'bronte', taskTemplate: 'Write a detailed brief based on this research: {{input}}' }, { agentId: 'guido', taskTemplate: 'Build a working implementation based on this brief: {{input}}' }] }
+        ];
+
+        async function loadPatternLibrary() {
+            try {
+                const res = await fetch('http://localhost:8888/api/intelligence/patterns');
+                const data = await res.json();
+                renderPatternLibrary(data.patterns || []);
+            } catch (e) { console.error('[Intel] Pattern library error:', e); }
+        }
+
+        // Store pattern steps by id for safe onclick references (avoids inline JSON XSS)
+        let _patternStepsRegistry = {};
+
+        function renderPatternLibrary(savedPatterns) {
+            const el = document.getElementById('intel-pattern-library');
+            const names = { newton: 'Newton', bronte: 'Bronte', guido: 'Guido' };
+            _patternStepsRegistry = {};
+            let html = '';
+
+            // Pre-built patterns
+            html += '<div style="font-size:0.7rem;font-weight:600;color:#9ca3af;margin-bottom:0.3rem;">Pre-built Patterns</div>';
+            PRESET_PATTERNS.forEach((p, i) => {
+                const regId = `preset-${i}`;
+                _patternStepsRegistry[regId] = p.steps;
+                const chain = p.steps.map(s => names[s.agentId] || s.agentId).join(' → ');
+                html += `<div class="pattern-card">
+                    <div class="pattern-card-header">
+                        <div>
+                            <div class="pattern-name">${p.name}</div>
+                            <div class="pattern-chain">${chain}</div>
+                        </div>
+                        <button class="btn btn-primary" style="font-size:0.6rem;padding:0.2rem 0.5rem;" onclick="runPatternById('${regId}')">Run This</button>
+                    </div>
+                    <div class="pattern-desc">${p.description}</div>
+                </div>`;
+            });
+
+            // Saved patterns
+            if (savedPatterns.length > 0) {
+                html += '<div style="font-size:0.7rem;font-weight:600;color:#9ca3af;margin:0.75rem 0 0.3rem;">Saved Patterns</div>';
+                savedPatterns.forEach((p, i) => {
+                    const regId = `saved-${i}`;
+                    _patternStepsRegistry[regId] = p.steps;
+                    const chain = p.steps.map(s => names[s.agentId] || s.agentId).join(' → ');
+                    html += `<div class="pattern-card">
+                        <div class="pattern-card-header">
+                            <div>
+                                <div class="pattern-name">${escapeHtml(p.name)}</div>
+                                <div class="pattern-chain">${chain}</div>
+                            </div>
+                            <button class="btn btn-primary" style="font-size:0.6rem;padding:0.2rem 0.5rem;" onclick="runPatternById('${regId}')">Run This</button>
+                        </div>
+                        ${p.description ? `<div class="pattern-desc">${escapeHtml(p.description)}</div>` : ''}
+                        <div style="font-size:0.55rem;color:#4b5563;margin-top:0.2rem;">Created ${new Date(p.createdAt).toLocaleDateString()}</div>
+                    </div>`;
+                });
+            }
+
+            // Save pattern button
+            html += '<button class="btn" style="font-size:0.65rem;padding:0.3rem 0.6rem;margin-top:0.5rem;width:100%;border:1px dashed rgba(139,92,246,0.3);color:#a78bfa;background:transparent;" onclick="showSavePatternForm()">+ Save New Pattern</button>';
+            html += '<div id="savePatternFormContainer"></div>';
+
+            el.innerHTML = html;
+        }
+
+        function runPatternById(regId) {
+            const steps = _patternStepsRegistry[regId];
+            if (steps) runPattern(steps);
+        }
+
+        function runPattern(steps) {
+            // Switch to command tab and open approval modal pre-populated
+            switchTab('command');
+            const plan = {
+                id: `pattern-${Date.now()}`,
+                goal: 'Pattern: ' + steps.map(s => ({ newton: 'Newton', bronte: 'Bronte', guido: 'Guido' }[s.agentId] || s.agentId)).join(' → '),
+                tasks: steps.map((s, i) => ({
+                    agent: s.agentId,
+                    task: s.taskTemplate || '',
+                    dependsOn: i > 0 ? i - 1 : undefined
+                })),
+                strategy: 'sequential',
+                reviewGates: false
+            };
+            setTimeout(() => showApprovalModal(plan), 300);
+        }
+
+        function showSavePatternForm() {
+            const container = document.getElementById('savePatternFormContainer');
+            if (!container) return;
+            container.innerHTML = `<div class="save-pattern-form">
+                <div style="font-size:0.7rem;font-weight:600;color:#c4b5fd;margin-bottom:0.3rem;">New Pattern</div>
+                <input type="text" id="patternName" placeholder="Pattern name">
+                <input type="text" id="patternDesc" placeholder="Description (optional)" style="margin-top:0.3rem;">
+                <div id="patternStepsContainer" style="margin-top:0.5rem;"></div>
+                <button class="btn" style="font-size:0.6rem;padding:0.2rem 0.5rem;margin-top:0.3rem;border:1px dashed rgba(139,92,246,0.3);color:#a78bfa;background:transparent;" onclick="addPatternStep()">+ Add Step</button>
+                <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+                    <button class="btn btn-primary" style="font-size:0.65rem;padding:0.3rem 0.6rem;" onclick="savePattern()">Save</button>
+                    <button class="btn" style="font-size:0.65rem;padding:0.3rem 0.6rem;" onclick="document.getElementById('savePatternFormContainer').innerHTML=''">Cancel</button>
+                </div>
+            </div>`;
+            // Add 2 default steps
+            addPatternStep(); addPatternStep();
+        }
+
+        let patternStepCount = 0;
+        function addPatternStep() {
+            const container = document.getElementById('patternStepsContainer');
+            if (!container) return;
+            const idx = patternStepCount++;
+            const div = document.createElement('div');
+            div.style.cssText = 'display:flex;gap:0.3rem;margin-bottom:0.3rem;align-items:center;';
+            div.innerHTML = `<select id="patternStepAgent-${idx}" style="background:rgba(255,255,255,0.05);border:1px solid #374151;color:#e5e7eb;padding:0.3rem;border-radius:0.25rem;font-size:0.7rem;">
+                <option value="newton">Newton</option><option value="bronte">Bronte</option><option value="guido">Guido</option>
+            </select>
+            <input type="text" id="patternStepTask-${idx}" placeholder="Task template (use {{input}} for prev output)" style="flex:1;font-size:0.7rem;">`;
+            container.appendChild(div);
+        }
+
+        async function savePattern() {
+            const name = document.getElementById('patternName')?.value?.trim();
+            if (!name) { showToast('Error', 'Pattern name required', 'error'); return; }
+            const desc = document.getElementById('patternDesc')?.value?.trim() || '';
+            const steps = [];
+            for (let i = 0; i < patternStepCount; i++) {
+                const agent = document.getElementById(`patternStepAgent-${i}`)?.value;
+                const task = document.getElementById(`patternStepTask-${i}`)?.value?.trim();
+                if (agent && task) steps.push({ agentId: agent, taskTemplate: task });
+            }
+            if (steps.length < 2) { showToast('Error', 'At least 2 steps required', 'error'); return; }
+            try {
+                const res = await fetch('http://localhost:8888/api/intelligence/patterns', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description: desc, steps })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Pattern Saved', `"${name}" saved to library`, 'success');
+                    patternStepCount = 0;
+                    loadPatternLibrary();
+                }
+            } catch (e) {
+                showToast('Error', 'Failed to save pattern: ' + e.message, 'error');
+            }
+        }
+
+        // ─── Panel 6: System Health ──────────────────────────────────────
+        async function loadSystemHealth() {
+            try {
+                const res = await fetch('http://localhost:8888/api/intelligence/system-health');
+                const data = await res.json();
+                renderSystemHealth(data);
+            } catch (e) { console.error('[Intel] System health error:', e); }
+        }
+
+        function renderSystemHealth(data) {
+            const el = document.getElementById('intel-system-health');
+            if (!data) { el.innerHTML = '<div class="intel-empty">Unable to load system health.</div>'; return; }
+
+            const uptimeHrs = Math.floor((data.uptime || 0) / 3600);
+            const uptimeMins = Math.floor(((data.uptime || 0) % 3600) / 60);
+            const memMB = Math.round((data.memory?.heapUsed || 0) / 1024 / 1024);
+
+            let html = '<div class="health-grid">';
+            html += `<div class="health-stat"><div class="health-stat-value">${uptimeHrs}h ${uptimeMins}m</div><div class="health-stat-label">Uptime</div></div>`;
+            html += `<div class="health-stat"><div class="health-stat-value">${memMB}MB</div><div class="health-stat-label">Memory</div></div>`;
+            html += `<div class="health-stat"><div class="health-stat-value">${data.tasks?.today || 0}</div><div class="health-stat-label">Tasks Today</div></div>`;
+            html += `<div class="health-stat"><div class="health-stat-value">${data.tasks?.week || 0}</div><div class="health-stat-label">Tasks This Week</div></div>`;
+            html += `<div class="health-stat"><div class="health-stat-value">${data.tokens?.cost > 0 ? '$' + data.tokens.cost.toFixed(3) : '$0'}</div><div class="health-stat-label">Token Cost</div></div>`;
+            html += `<div class="health-stat"><div class="health-stat-value">${data.pipelineCount || 0}</div><div class="health-stat-label">Pipelines</div></div>`;
+            html += '</div>';
+
+            // Agent statuses
+            if (data.agentStatuses) {
+                html += '<div style="font-size:0.7rem;font-weight:600;color:#9ca3af;margin-bottom:0.3rem;">Agent Status</div>';
+                html += '<div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;flex-wrap:wrap;">';
+                data.agentStatuses.forEach(a => {
+                    const statusColor = a.status === 'running' ? '#fbbf24' : a.status === 'active' ? '#4ade80' : '#6b7280';
+                    html += `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:0.375rem;padding:0.4rem 0.6rem;font-size:0.7rem;">
+                        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${statusColor};margin-right:0.3rem;"></span>
+                        <span style="color:#e5e7eb;font-weight:600;">${a.name}</span>
+                        <span style="color:#6b7280;margin-left:0.2rem;">${a.status}</span>
+                        ${a.queueLength > 0 ? `<span style="color:#a78bfa;margin-left:0.3rem;">${a.queueLength} queued</span>` : ''}
+                    </div>`;
+                });
+                html += '</div>';
+            }
+
+            // Event log
+            html += '<div style="font-size:0.7rem;font-weight:600;color:#9ca3af;margin-bottom:0.3rem;">Event Log</div>';
+            if (data.events && data.events.length > 0) {
+                html += '<div class="event-log">';
+                data.events.forEach(ev => {
+                    const time = new Date(ev.timestamp).toLocaleTimeString();
+                    html += `<div class="event-item">
+                        <span class="event-time">${time}</span>
+                        <span class="event-type" style="margin-left:0.3rem;">[${ev.type}]</span>
+                        ${ev.agent ? `<span style="color:#a78bfa;margin-left:0.2rem;">${ev.agent}</span>` : ''}
+                        <span class="event-detail" style="margin-left:0.3rem;">${escapeHtml((ev.detail || '').substring(0, 100))}</span>
+                    </div>`;
+                });
+                html += '</div>';
+            } else {
+                html += '<div class="intel-empty" style="padding:0.5rem 0;">No events recorded yet.</div>';
+            }
+
+            el.innerHTML = html;
+        }
     </script>
 </body>
 </html>

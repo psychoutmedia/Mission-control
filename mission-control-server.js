@@ -112,6 +112,185 @@ let pipelineIdCounter = 0;
 const PERSIST_DIR = path.join(__dirname, '.mission-control');
 const SCHEDULES_FILE = path.join(PERSIST_DIR, 'schedules.json');
 const PIPELINES_FILE = path.join(PERSIST_DIR, 'pipelines.json');
+const INTELLIGENCE_FILE = path.join(PERSIST_DIR, 'intelligence.json');
+
+// ─── Intelligence data ──────────────────────────────────────────────────
+let intelligenceData = {
+    decompositionLog: [],
+    astraPrompt: { version: 1, current: null, history: [] },
+    savedPatterns: [],
+    systemEvents: []
+};
+
+function loadIntelligence() {
+    try {
+        if (fs.existsSync(INTELLIGENCE_FILE)) {
+            const data = JSON.parse(fs.readFileSync(INTELLIGENCE_FILE, 'utf8'));
+            intelligenceData = {
+                decompositionLog: data.decompositionLog || [],
+                astraPrompt: data.astraPrompt || { version: 1, current: null, history: [] },
+                savedPatterns: data.savedPatterns || [],
+                systemEvents: data.systemEvents || []
+            };
+            console.log(`[PERSIST] Loaded intelligence: ${intelligenceData.decompositionLog.length} decomps, ${intelligenceData.savedPatterns.length} patterns, ${intelligenceData.systemEvents.length} events`);
+        }
+    } catch (e) {
+        console.log(`[PERSIST] Failed to load intelligence: ${e.message}`);
+    }
+}
+
+function saveIntelligence() {
+    ensurePersistDir();
+    try {
+        // Cap arrays
+        if (intelligenceData.decompositionLog.length > 100) {
+            intelligenceData.decompositionLog = intelligenceData.decompositionLog.slice(0, 100);
+        }
+        if (intelligenceData.systemEvents.length > 500) {
+            intelligenceData.systemEvents = intelligenceData.systemEvents.slice(0, 500);
+        }
+        fs.writeFileSync(INTELLIGENCE_FILE, JSON.stringify(intelligenceData, null, 2));
+    } catch (e) {
+        console.log(`[PERSIST] Failed to save intelligence: ${e.message}`);
+    }
+}
+
+function logSystemEvent(type, agent, detail) {
+    intelligenceData.systemEvents.unshift({
+        type, agent, detail,
+        timestamp: new Date().toISOString()
+    });
+    if (intelligenceData.systemEvents.length > 500) {
+        intelligenceData.systemEvents = intelligenceData.systemEvents.slice(0, 500);
+    }
+    saveIntelligence();
+}
+
+// ─── Intelligence helpers ───────────────────────────────────────────────
+
+function detectUserEdits(originalPlan, approvedPlan) {
+    const origTasks = originalPlan || [];
+    const approvedTasks = approvedPlan || [];
+    const edits = { addedSteps: 0, removedSteps: 0, changedAgents: 0, editedTasks: 0 };
+
+    // Compare by index
+    const maxLen = Math.max(origTasks.length, approvedTasks.length);
+    for (let i = 0; i < maxLen; i++) {
+        const orig = origTasks[i];
+        const approved = approvedTasks[i];
+        if (!orig && approved) edits.addedSteps++;
+        else if (orig && !approved) edits.removedSteps++;
+        else if (orig && approved) {
+            if (orig.agent !== approved.agent) edits.changedAgents++;
+            if (orig.task !== approved.task) edits.editedTasks++;
+        }
+    }
+    return edits;
+}
+
+function calculateDecompQuality(entry) {
+    let score = 0;
+    // JSON success (parsed correctly, not heuristic)
+    if (entry.method === 'json') score += 25;
+    // No user edits
+    if (entry.userEdits) {
+        const e = entry.userEdits;
+        if (e.addedSteps === 0 && e.removedSteps === 0 && e.changedAgents === 0 && e.editedTasks === 0) {
+            score += 25;
+        }
+    } else {
+        score += 25; // no edits data = assume no edits
+    }
+    // Pipeline success
+    if (entry.outcome === 'completed') score += 50;
+    else if (entry.outcome === 'error') score += 0;
+    else score += 25; // pending = neutral
+    return score;
+}
+
+function updateDecompOutcome(pipeline) {
+    const entry = intelligenceData.decompositionLog.find(d => d.pipelineId === pipeline.id);
+    if (entry) {
+        entry.outcome = pipeline.status === 'completed' ? 'completed' : 'error';
+        entry.score = calculateDecompQuality(entry);
+        entry.completedAt = new Date().toISOString();
+        saveIntelligence();
+    }
+}
+
+function assessHandoffQuality(handoff, nextOutput) {
+    if (!handoff) return { score: 0, breakdown: {} };
+    let score = 0;
+    const breakdown = {};
+
+    // Summary present and non-trivial
+    if (handoff.summary && handoff.summary.length > 20) { score += 25; breakdown.summary = true; }
+    // Has findings
+    if (handoff.key_findings && handoff.key_findings.length > 0) { score += 25; breakdown.findings = handoff.key_findings.length; }
+    // Has sources
+    if (handoff.sources && handoff.sources.length > 0) { score += 15; breakdown.sources = handoff.sources.length; }
+    // Has confidence
+    if (handoff.confidence) { score += 10; breakdown.confidence = handoff.confidence; }
+    // Recommended angle
+    if (handoff.recommended_angle && handoff.recommended_angle.length > 10) { score += 10; breakdown.angle = true; }
+
+    // Noun overlap: check if next agent's output references handoff content
+    if (nextOutput && handoff.key_findings && handoff.key_findings.length > 0) {
+        const nextLower = (nextOutput || '').toLowerCase();
+        const mentioned = handoff.key_findings.filter(f => {
+            const words = f.toLowerCase().split(/\s+/).filter(w => w.length > 4);
+            return words.some(w => nextLower.includes(w));
+        });
+        if (mentioned.length > 0) { score += 15; breakdown.overlap = mentioned.length; }
+    }
+
+    return { score: Math.min(100, score), breakdown };
+}
+
+function getDefaultDecompPrompt() {
+    return `You are Astra, the CEO and Project Manager of Automa Dynamics. You manage three specialist agents:
+
+AGENTS:
+- Newton (researcher): fact-finding, synthesis, investigation, web research. Outputs: structured findings, source URLs, data, competitor analysis.
+- Bronte (content writer): blog posts, landing page copy, YouTube scripts, documentation, editing. Outputs: polished prose, headlines, CTAs, narrative structure.
+- Guido (coder): Python, TypeScript, HTML/CSS, debugging, building. Outputs: working code files, scripts, web pages, tools.
+
+USER GOAL: "{{GOAL}}"
+
+Decompose this into 1-3 agent tasks. Each task MUST include:
+- "agent": which agent (newton/bronte/guido)
+- "task": a specific, actionable instruction
+- "expectedOutput": what this agent should produce (format, length, key elements)
+- "successCriteria": how we'll know this step succeeded
+- "handoffNote": what the NEXT agent needs from this step's output (omit for the final step)
+- "dependsOn": index of the task this depends on (omit for independent/first tasks)
+
+Output ONLY valid JSON (no markdown, no explanation):
+{"tasks":[{"agent":"newton","task":"...","expectedOutput":"...","successCriteria":"...","handoffNote":"...","dependsOn":0}]}
+
+EXAMPLES:
+
+Goal: "Build me a landing page for a productivity app"
+{"tasks":[{"agent":"newton","task":"Research the top 5 productivity apps (Notion, Todoist, Asana, ClickUp, Linear). For each, note: tagline, hero section approach, key features highlighted, pricing model, and CTA text. List 3 common patterns across all.","expectedOutput":"Structured comparison table with URLs, plus 3 common landing page patterns","successCriteria":"At least 5 competitors analysed with specific quotes/examples from their landing pages","handoffNote":"Bronte needs the competitor patterns and best tagline examples to write compelling copy","dependsOn":null},{"agent":"bronte","task":"Write landing page copy: hero headline + subheadline, 3 feature sections with headlines and 2-sentence descriptions, a social proof section placeholder, and a CTA section. Tone: confident but not pushy. Keep it under 400 words total.","expectedOutput":"Complete landing page copy in markdown sections, ready for a developer to implement","successCriteria":"All sections present, copy is specific (not generic), CTAs are actionable","handoffNote":"Guido needs the exact copy text and section structure to build the HTML page","dependsOn":0},{"agent":"guido","task":"Build a responsive HTML landing page using the copy provided. Use a modern design: dark gradient background, clean typography (system fonts), hero section with CTA button, feature grid, footer. Single file, no external dependencies.","expectedOutput":"A single index.html file with embedded CSS, mobile-responsive, production-ready","successCriteria":"Page renders correctly, all copy sections are present, responsive on mobile","dependsOn":1}]}
+
+Goal: "Write a blog post about quantum computing"
+{"tasks":[{"agent":"newton","task":"Research quantum computing for a general audience: explain qubits vs classical bits, list 3 real-world applications (with company names), note 2 recent breakthroughs (2024-2025), and identify the biggest current limitation.","expectedOutput":"Research brief with 4 sections, each with specific facts and source URLs","successCriteria":"All 4 sections have concrete facts (not vague), at least 3 source URLs included","handoffNote":"Bronte needs the specific facts, examples, and sources to write an engaging blog post","dependsOn":null},{"agent":"bronte","task":"Write a 600-800 word blog post about quantum computing for a general audience. Use a hook opening, explain concepts with analogies, include the specific examples and breakthroughs from research. End with a forward-looking conclusion. Conversational tone.","expectedOutput":"Complete blog post in markdown, 600-800 words, with a compelling title","successCriteria":"Post is engaging for non-technical readers, all research facts are woven in naturally, has a clear narrative arc","dependsOn":0}]}
+
+Goal: "Create a Python script that analyses CSV data"
+{"tasks":[{"agent":"guido","task":"Build a Python CLI tool that reads a CSV file, displays summary statistics (row count, column types, missing values per column), and generates a simple report. Use pandas. Include argparse for the file path argument and pretty-print the output.","expectedOutput":"A single Python file (csv_analyser.py) with CLI interface, error handling for missing/malformed files","successCriteria":"Script runs with 'python csv_analyser.py data.csv', handles edge cases, output is readable"}]}
+
+RULES:
+- Only include agents that are actually needed — don't force all three
+- Tasks must be specific enough that the agent can execute without asking questions
+- Each task should describe WHAT to produce, not just what to research
+- If tasks are sequential (most are), use dependsOn to chain them
+- Keep it practical — 1-3 tasks maximum, no over-decomposition`;
+}
+
+function getCurrentDecompPrompt(goal) {
+    const template = intelligenceData.astraPrompt.current || getDefaultDecompPrompt();
+    return template.replace(/\{\{GOAL\}\}/g, goal);
+}
 
 function ensurePersistDir() {
     try { if (!fs.existsSync(PERSIST_DIR)) fs.mkdirSync(PERSIST_DIR, { recursive: true }); } catch {}
@@ -364,6 +543,7 @@ setInterval(checkSchedules, 30000);
 // Load persisted data on startup (after all variables are declared)
 loadSchedules();
 loadPipelines();
+loadIntelligence();
 
 // ─── Helpers ───────────────────────────────────────────────────────────
 
@@ -725,7 +905,15 @@ function getFullAgentStatus() {
         terminalOutputs[agentDef.id] = agentTerminalOutput[agentDef.id] || '';
     }
 
-    return { activities, completedResults, terminalOutputs, pipelines: activePipelines };
+    return {
+        activities, completedResults, terminalOutputs, pipelines: activePipelines,
+        intelligence: {
+            decompCount: intelligenceData.decompositionLog.length,
+            patternCount: intelligenceData.savedPatterns.length,
+            latestEvent: intelligenceData.systemEvents[0] || null,
+            promptVersion: intelligenceData.astraPrompt.version
+        }
+    };
 }
 
 // ─── Fetch gateway sessions via CLI ────────────────────────────────────
@@ -1142,7 +1330,7 @@ function detectDeliverables(agentId, startMs, endMs) {
 
 const server = http.createServer(async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
@@ -1161,12 +1349,41 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // GET/POST kanban data
+    // ─── Kanban data (multi-board) ──────────────────────────────────────
+
+    // Auto-migrate old format { tasks, activity } → { boards: [...], activeBoardId }
+    function migrateDataIfNeeded(data) {
+        if (data.boards) return data; // Already new format
+        // Old format detected — wrap into a single "Main" board
+        const boardId = 'board-' + Date.now();
+        const migrated = {
+            boards: [{
+                id: boardId,
+                name: 'Main',
+                tasks: data.tasks || [],
+                activity: data.activity || []
+            }],
+            activeBoardId: boardId
+        };
+        console.log('[MIGRATE] Converted old kanban format to multi-board (Main)');
+        return migrated;
+    }
+
     if (req.url === '/data' && req.method === 'GET') {
-        fs.readFile(DATA_FILE, 'utf8', (err, data) => {
+        fs.readFile(DATA_FILE, 'utf8', (err, raw) => {
             if (err) { res.writeHead(500); res.end(JSON.stringify({ error: 'Error reading data' })); return; }
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(data);
+            try {
+                let data = JSON.parse(raw);
+                const migrated = migrateDataIfNeeded(data);
+                if (!data.boards) {
+                    // Write migrated format back to disk
+                    fs.writeFile(DATA_FILE, JSON.stringify(migrated, null, 2), () => {});
+                }
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(migrated));
+            } catch (e) {
+                res.writeHead(500); res.end(JSON.stringify({ error: 'Error parsing data' }));
+            }
         });
         return;
     }
@@ -1185,6 +1402,97 @@ const server = http.createServer(async (req, res) => {
             } catch (e) {
                 res.writeHead(400);
                 res.end(JSON.stringify({ error: 'Invalid JSON' }));
+            }
+        });
+        return;
+    }
+
+    // ─── Board CRUD endpoints ────────────────────────────────────────────
+
+    if (req.url === '/boards' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', () => {
+            try {
+                const { name } = JSON.parse(body);
+                if (!name || !name.trim()) {
+                    res.writeHead(400); res.end(JSON.stringify({ error: 'Board name required' })); return;
+                }
+                fs.readFile(DATA_FILE, 'utf8', (err, raw) => {
+                    if (err) { res.writeHead(500); res.end(JSON.stringify({ error: 'Error reading data' })); return; }
+                    const data = migrateDataIfNeeded(JSON.parse(raw));
+                    const newBoard = {
+                        id: 'board-' + Date.now(),
+                        name: name.trim(),
+                        tasks: [],
+                        activity: []
+                    };
+                    data.boards.push(newBoard);
+                    data.activeBoardId = newBoard.id;
+                    fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), (err) => {
+                        if (err) { res.writeHead(500); res.end(JSON.stringify({ error: 'Error saving' })); return; }
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify(data));
+                    });
+                });
+            } catch (e) {
+                res.writeHead(400); res.end(JSON.stringify({ error: 'Invalid JSON' }));
+            }
+        });
+        return;
+    }
+
+    // DELETE /boards/:id
+    const deleteMatch = req.url.match(/^\/boards\/([^/]+)$/);
+    if (deleteMatch && req.method === 'DELETE') {
+        const boardId = decodeURIComponent(deleteMatch[1]);
+        fs.readFile(DATA_FILE, 'utf8', (err, raw) => {
+            if (err) { res.writeHead(500); res.end(JSON.stringify({ error: 'Error reading data' })); return; }
+            const data = migrateDataIfNeeded(JSON.parse(raw));
+            if (data.boards.length <= 1) {
+                res.writeHead(400); res.end(JSON.stringify({ error: 'Cannot delete the last board' })); return;
+            }
+            data.boards = data.boards.filter(b => b.id !== boardId);
+            if (data.activeBoardId === boardId) {
+                data.activeBoardId = data.boards[0].id;
+            }
+            fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), (err) => {
+                if (err) { res.writeHead(500); res.end(JSON.stringify({ error: 'Error saving' })); return; }
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(data));
+            });
+        });
+        return;
+    }
+
+    // PUT /boards/:id (rename)
+    const putMatch = req.url.match(/^\/boards\/([^/]+)$/);
+    if (putMatch && req.method === 'PUT') {
+        const boardId = decodeURIComponent(putMatch[1]);
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', () => {
+            try {
+                const { name } = JSON.parse(body);
+                if (!name || !name.trim()) {
+                    res.writeHead(400); res.end(JSON.stringify({ error: 'Board name required' })); return;
+                }
+                fs.readFile(DATA_FILE, 'utf8', (err, raw) => {
+                    if (err) { res.writeHead(500); res.end(JSON.stringify({ error: 'Error reading data' })); return; }
+                    const data = migrateDataIfNeeded(JSON.parse(raw));
+                    const board = data.boards.find(b => b.id === boardId);
+                    if (!board) {
+                        res.writeHead(404); res.end(JSON.stringify({ error: 'Board not found' })); return;
+                    }
+                    board.name = name.trim();
+                    fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), (err) => {
+                        if (err) { res.writeHead(500); res.end(JSON.stringify({ error: 'Error saving' })); return; }
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify(data));
+                    });
+                });
+            } catch (e) {
+                res.writeHead(400); res.end(JSON.stringify({ error: 'Invalid JSON' }));
             }
         });
         return;
@@ -1889,6 +2197,10 @@ const server = http.createServer(async (req, res) => {
                 pipeline.endedAt = new Date().toISOString();
                 console.log(`[PIPELINE] Pipeline finished: ${pipeline.status}`);
 
+                // Intelligence tracking
+                updateDecompOutcome(pipeline);
+                logSystemEvent(pipeline.status === 'completed' ? 'pipeline_complete' : 'pipeline_error', 'system', `Pipeline "${pipeline.name}" ${pipeline.status}`);
+
                 // Generate pipeline report
                 if (pipeline.status === 'completed') {
                     pipeline.report = generatePipelineReport(pipeline);
@@ -1925,48 +2237,13 @@ const server = http.createServer(async (req, res) => {
                     timestamp: new Date().toISOString()
                 };
 
-                // Ask Astra to decompose the goal into subtasks
-                const decompositionPrompt = `You are Astra, the CEO and Project Manager of Automa Dynamics. You manage three specialist agents:
-
-AGENTS:
-- Newton (researcher): fact-finding, synthesis, investigation, web research. Outputs: structured findings, source URLs, data, competitor analysis.
-- Bronte (content writer): blog posts, landing page copy, YouTube scripts, documentation, editing. Outputs: polished prose, headlines, CTAs, narrative structure.
-- Guido (coder): Python, TypeScript, HTML/CSS, debugging, building. Outputs: working code files, scripts, web pages, tools.
-
-USER GOAL: "${goal}"
-
-Decompose this into 1-3 agent tasks. Each task MUST include:
-- "agent": which agent (newton/bronte/guido)
-- "task": a specific, actionable instruction
-- "expectedOutput": what this agent should produce (format, length, key elements)
-- "successCriteria": how we'll know this step succeeded
-- "handoffNote": what the NEXT agent needs from this step's output (omit for the final step)
-- "dependsOn": index of the task this depends on (omit for independent/first tasks)
-
-Output ONLY valid JSON (no markdown, no explanation):
-{"tasks":[{"agent":"newton","task":"...","expectedOutput":"...","successCriteria":"...","handoffNote":"...","dependsOn":0}]}
-
-EXAMPLES:
-
-Goal: "Build me a landing page for a productivity app"
-{"tasks":[{"agent":"newton","task":"Research the top 5 productivity apps (Notion, Todoist, Asana, ClickUp, Linear). For each, note: tagline, hero section approach, key features highlighted, pricing model, and CTA text. List 3 common patterns across all.","expectedOutput":"Structured comparison table with URLs, plus 3 common landing page patterns","successCriteria":"At least 5 competitors analysed with specific quotes/examples from their landing pages","handoffNote":"Bronte needs the competitor patterns and best tagline examples to write compelling copy","dependsOn":null},{"agent":"bronte","task":"Write landing page copy: hero headline + subheadline, 3 feature sections with headlines and 2-sentence descriptions, a social proof section placeholder, and a CTA section. Tone: confident but not pushy. Keep it under 400 words total.","expectedOutput":"Complete landing page copy in markdown sections, ready for a developer to implement","successCriteria":"All sections present, copy is specific (not generic), CTAs are actionable","handoffNote":"Guido needs the exact copy text and section structure to build the HTML page","dependsOn":0},{"agent":"guido","task":"Build a responsive HTML landing page using the copy provided. Use a modern design: dark gradient background, clean typography (system fonts), hero section with CTA button, feature grid, footer. Single file, no external dependencies.","expectedOutput":"A single index.html file with embedded CSS, mobile-responsive, production-ready","successCriteria":"Page renders correctly, all copy sections are present, responsive on mobile","dependsOn":1}]}
-
-Goal: "Write a blog post about quantum computing"
-{"tasks":[{"agent":"newton","task":"Research quantum computing for a general audience: explain qubits vs classical bits, list 3 real-world applications (with company names), note 2 recent breakthroughs (2024-2025), and identify the biggest current limitation.","expectedOutput":"Research brief with 4 sections, each with specific facts and source URLs","successCriteria":"All 4 sections have concrete facts (not vague), at least 3 source URLs included","handoffNote":"Bronte needs the specific facts, examples, and sources to write an engaging blog post","dependsOn":null},{"agent":"bronte","task":"Write a 600-800 word blog post about quantum computing for a general audience. Use a hook opening, explain concepts with analogies, include the specific examples and breakthroughs from research. End with a forward-looking conclusion. Conversational tone.","expectedOutput":"Complete blog post in markdown, 600-800 words, with a compelling title","successCriteria":"Post is engaging for non-technical readers, all research facts are woven in naturally, has a clear narrative arc","dependsOn":0}]}
-
-Goal: "Create a Python script that analyses CSV data"
-{"tasks":[{"agent":"guido","task":"Build a Python CLI tool that reads a CSV file, displays summary statistics (row count, column types, missing values per column), and generates a simple report. Use pandas. Include argparse for the file path argument and pretty-print the output.","expectedOutput":"A single Python file (csv_analyser.py) with CLI interface, error handling for missing/malformed files","successCriteria":"Script runs with 'python csv_analyser.py data.csv', handles edge cases, output is readable"}]}
-
-RULES:
-- Only include agents that are actually needed — don't force all three
-- Tasks must be specific enough that the agent can execute without asking questions
-- Each task should describe WHAT to produce, not just what to research
-- If tasks are sequential (most are), use dependsOn to chain them
-- Keep it practical — 1-3 tasks maximum, no over-decomposition`;
+                // Ask Astra to decompose the goal into subtasks (uses dynamic prompt)
+                const decompositionPrompt = getCurrentDecompPrompt(goal);
 
                 // Try Astra decomposition with a 60s timeout. If it fails/times out,
                 // fall back to heuristic immediately so the user always gets a plan.
                 let plan = null;
+                let decompMethod = 'heuristic';
                 try {
                     const astraResult = await runAgentTask('main', decompositionPrompt, { timeoutMs: 60000 });
                     console.log(`[COMMAND] Astra returned ${(astraResult.stdout || '').length} chars, code=${astraResult.code}`);
@@ -1976,6 +2253,7 @@ RULES:
                     if (jsonMatch) {
                         try {
                             plan = JSON.parse(jsonMatch[0]);
+                            decompMethod = 'json';
                             console.log(`[COMMAND] Parsed ${plan.tasks?.length || 0} tasks from Astra's response`);
                         } catch (e) {
                             console.log('[COMMAND] Could not parse Astra response as JSON:', e.message);
@@ -1994,6 +2272,7 @@ RULES:
 
                 if (!plan || !plan.tasks || !Array.isArray(plan.tasks)) {
                     console.log('[COMMAND] Astra decomposition failed or timed out, using heuristic');
+                    decompMethod = 'heuristic';
                     plan = { tasks: [] };
                     const goalLower = goal.toLowerCase();
                     if (goalLower.includes('research') || goalLower.includes('find') || goalLower.includes('investigate') || goalLower.includes('search') || goalLower.includes('learn about')) {
@@ -2028,13 +2307,35 @@ RULES:
 
                 // Return decomposition plan for user approval
                 const planId = `plan-${crypto.randomUUID()}`;
+                const decompId = `decomp-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
                 console.log(`[COMMAND] Goal: "${goal.substring(0, 60)}" → ${plan.tasks.length} tasks (${strategy}), awaiting approval`);
+
+                // Log decomposition to intelligence
+                const decompEntry = {
+                    id: decompId,
+                    goal,
+                    method: decompMethod,
+                    taskCount: plan.tasks.length,
+                    agents: plan.tasks.map(t => t.agent),
+                    rawPlan: plan.tasks.map(t => ({ agent: t.agent, task: t.task })),
+                    outcome: 'pending',
+                    score: null,
+                    pipelineId: null,
+                    userEdits: null,
+                    createdAt: new Date().toISOString(),
+                    completedAt: null,
+                    promptVersion: intelligenceData.astraPrompt.version
+                };
+                intelligenceData.decompositionLog.unshift(decompEntry);
+                saveIntelligence();
+                logSystemEvent('decomposition', 'main', `Goal: "${goal.substring(0, 80)}" → ${plan.tasks.length} tasks (${decompMethod})`);
 
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                     success: true,
                     plan: {
                         id: planId,
+                        decompId,
                         goal,
                         tasks: plan.tasks,
                         strategy
@@ -2064,6 +2365,16 @@ RULES:
 
                 const goal = plan.goal || 'Command';
                 const hasDependencies = plan.tasks.some(t => t.dependsOn !== undefined);
+
+                // Track user edits in intelligence
+                if (plan.decompId) {
+                    const decompEntry = intelligenceData.decompositionLog.find(d => d.id === plan.decompId);
+                    if (decompEntry) {
+                        decompEntry.userEdits = detectUserEdits(decompEntry.rawPlan, plan.tasks.map(t => ({ agent: t.agent, task: t.task })));
+                        decompEntry.score = calculateDecompQuality(decompEntry);
+                        saveIntelligence();
+                    }
+                }
 
                 // Clear Astra's terminal and show the approved plan
                 const agentNames = { newton: 'Newton', guido: 'Guido', bronte: 'Bronte', main: 'Astra' };
@@ -2118,6 +2429,15 @@ RULES:
                         currentStep: 0
                     };
                     activePipelines.unshift(pipeline);
+
+                    // Link decomp entry to pipeline
+                    if (plan.decompId) {
+                        const decompEntry = intelligenceData.decompositionLog.find(d => d.id === plan.decompId);
+                        if (decompEntry) {
+                            decompEntry.pipelineId = pipelineId;
+                            saveIntelligence();
+                        }
+                    }
 
                     // Run pipeline in background with summarisation between steps
                     (async () => {
@@ -2250,6 +2570,10 @@ RULES:
                         }
                         if (pipeline.status !== 'error') pipeline.status = 'completed';
                         pipeline.endedAt = new Date().toISOString();
+
+                        // Intelligence tracking
+                        updateDecompOutcome(pipeline);
+                        logSystemEvent(pipeline.status === 'completed' ? 'pipeline_complete' : 'pipeline_error', 'system', `Pipeline "${pipeline.name}" ${pipeline.status}`);
 
                         // Generate pipeline report
                         if (pipeline.status === 'completed') {
@@ -2390,6 +2714,286 @@ RULES:
         return;
     }
 
+    // ─── Intelligence API endpoints ─────────────────────────────────────
+
+    // Pipeline success matrix
+    if (req.url === '/api/intelligence/pipeline-stats' && req.method === 'GET') {
+        const completedPipelines = activePipelines.filter(p => p.status === 'completed' || p.status === 'error');
+        const agentIds = ['newton', 'bronte', 'guido'];
+
+        // Build agent-pair matrix
+        const matrix = {};
+        agentIds.forEach(a => {
+            matrix[a] = {};
+            agentIds.forEach(b => { matrix[a][b] = { total: 0, success: 0 }; });
+        });
+
+        // Track patterns (agent sequences)
+        const patternCounts = {};
+
+        completedPipelines.forEach(p => {
+            const chain = (p.steps || []).map(s => s.agentId).filter(id => agentIds.includes(id));
+            const patternKey = chain.join(' → ');
+            if (patternKey) {
+                if (!patternCounts[patternKey]) patternCounts[patternKey] = { total: 0, success: 0, chain };
+                patternCounts[patternKey].total++;
+                if (p.status === 'completed') patternCounts[patternKey].success++;
+            }
+
+            // Update pair matrix for consecutive steps
+            for (let i = 0; i < chain.length - 1; i++) {
+                const from = chain[i], to = chain[i + 1];
+                if (matrix[from] && matrix[from][to]) {
+                    matrix[from][to].total++;
+                    if (p.status === 'completed') matrix[from][to].success++;
+                }
+            }
+        });
+
+        // Rank patterns
+        const ranked = Object.entries(patternCounts)
+            .map(([key, val]) => ({ pattern: key, ...val, rate: val.total > 0 ? Math.round((val.success / val.total) * 100) : 0 }))
+            .sort((a, b) => b.total - a.total);
+
+        // Most reliable
+        const mostReliable = ranked.filter(r => r.total >= 1).sort((a, b) => b.rate - a.rate)[0] || null;
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ matrix, ranked, mostReliable, totalPipelines: completedPipelines.length }));
+        return;
+    }
+
+    // Decomposition log
+    if (req.url === '/api/intelligence/decomposition-log' && req.method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ log: intelligenceData.decompositionLog }));
+        return;
+    }
+
+    // Agent profiles
+    if (req.url === '/api/intelligence/agent-profiles' && req.method === 'GET') {
+        const profiles = AGENTS.filter(a => a.id !== 'main').map(agent => {
+            const perf = getAgentPerformance(agent.id);
+            const tokens = getAgentTokenStats(agent.id);
+
+            // Daily volume from completedResults (last 7 days)
+            const now = Date.now();
+            const dailyVolume = [];
+            for (let d = 6; d >= 0; d--) {
+                const dayStart = now - (d + 1) * 86400000;
+                const dayEnd = now - d * 86400000;
+                const count = completedResults.filter(r => r.agent === agent.id && r.endedAt >= dayStart && r.endedAt < dayEnd).length;
+                dailyVolume.push(count);
+            }
+
+            // Task type heuristic
+            const agentResults = completedResults.filter(r => r.agent === agent.id);
+            const taskTypes = {};
+            agentResults.forEach(r => {
+                const task = (r.task || '').toLowerCase();
+                let type = 'general';
+                if (task.includes('research') || task.includes('find') || task.includes('investigate')) type = 'research';
+                else if (task.includes('write') || task.includes('blog') || task.includes('content')) type = 'writing';
+                else if (task.includes('build') || task.includes('code') || task.includes('create')) type = 'coding';
+                else if (task.includes('pipeline') || task.includes('summarise')) type = 'pipeline';
+                taskTypes[type] = (taskTypes[type] || 0) + 1;
+            });
+
+            return {
+                id: agent.id,
+                name: agent.name,
+                role: agent.role,
+                performance: perf,
+                tokens,
+                dailyVolume,
+                taskTypes,
+                currentModel: friendlyModelName(getAgentCurrentModel(agent.id))
+            };
+        });
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ profiles }));
+        return;
+    }
+
+    // Astra prompt — GET
+    if (req.url === '/api/intelligence/astra-prompt' && req.method === 'GET') {
+        const last5 = intelligenceData.decompositionLog.slice(0, 5).map(d => ({
+            id: d.id, goal: d.goal, method: d.method, taskCount: d.taskCount,
+            outcome: d.outcome, score: d.score, createdAt: d.createdAt
+        }));
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+            current: intelligenceData.astraPrompt.current || getDefaultDecompPrompt(),
+            isDefault: !intelligenceData.astraPrompt.current,
+            version: intelligenceData.astraPrompt.version,
+            history: intelligenceData.astraPrompt.history.slice(0, 10),
+            recentDecomps: last5
+        }));
+        return;
+    }
+
+    // Astra prompt — POST (update or reset)
+    if (req.url === '/api/intelligence/astra-prompt' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', () => {
+            try {
+                const { prompt, source } = JSON.parse(body);
+                if (source === 'reset' || prompt === null) {
+                    // Reset to default
+                    intelligenceData.astraPrompt.history.unshift({
+                        version: intelligenceData.astraPrompt.version,
+                        prompt: intelligenceData.astraPrompt.current || 'default',
+                        changedAt: new Date().toISOString(),
+                        source: 'reset'
+                    });
+                    intelligenceData.astraPrompt.current = null;
+                    intelligenceData.astraPrompt.version++;
+                    saveIntelligence();
+                    logSystemEvent('prompt_reset', 'main', `Astra prompt reset to default (v${intelligenceData.astraPrompt.version})`);
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true, version: intelligenceData.astraPrompt.version, isDefault: true }));
+                } else if (prompt && typeof prompt === 'string') {
+                    intelligenceData.astraPrompt.history.unshift({
+                        version: intelligenceData.astraPrompt.version,
+                        prompt: (intelligenceData.astraPrompt.current || 'default').substring(0, 200),
+                        changedAt: new Date().toISOString(),
+                        source: source || 'user'
+                    });
+                    intelligenceData.astraPrompt.current = prompt;
+                    intelligenceData.astraPrompt.version++;
+                    saveIntelligence();
+                    logSystemEvent('prompt_update', 'main', `Astra prompt updated to v${intelligenceData.astraPrompt.version}`);
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true, version: intelligenceData.astraPrompt.version, isDefault: false }));
+                } else {
+                    res.writeHead(400);
+                    res.end(JSON.stringify({ error: 'Invalid prompt' }));
+                }
+            } catch (e) {
+                res.writeHead(400);
+                res.end(JSON.stringify({ error: e.message }));
+            }
+        });
+        return;
+    }
+
+    // Handoff quality
+    if (req.url === '/api/intelligence/handoff-quality' && req.method === 'GET') {
+        const handoffs = [];
+        const completedPipelines = activePipelines.filter(p => p.status === 'completed' && p.steps);
+        completedPipelines.forEach(p => {
+            for (let i = 0; i < p.steps.length - 1; i++) {
+                const step = p.steps[i];
+                const nextStep = p.steps[i + 1];
+                if (step.handoff) {
+                    const quality = assessHandoffQuality(step.handoff, nextStep?.output || '');
+                    const agent = AGENTS.find(a => a.id === step.agentId);
+                    const nextAgent = AGENTS.find(a => a.id === nextStep?.agentId);
+                    handoffs.push({
+                        pipelineId: p.id,
+                        pipelineName: p.name,
+                        fromAgent: agent?.name || step.agentId,
+                        toAgent: nextAgent?.name || nextStep?.agentId || 'unknown',
+                        summary: (step.handoff.summary || '').substring(0, 200),
+                        findingsCount: (step.handoff.key_findings || []).length,
+                        confidence: step.handoff.confidence || 'unknown',
+                        quality,
+                        timestamp: step.endedAt
+                    });
+                }
+            }
+        });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ handoffs }));
+        return;
+    }
+
+    // Patterns — GET
+    if (req.url === '/api/intelligence/patterns' && req.method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ patterns: intelligenceData.savedPatterns }));
+        return;
+    }
+
+    // Patterns — POST (save new pattern)
+    if (req.url === '/api/intelligence/patterns' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', () => {
+            try {
+                const { name, description, steps } = JSON.parse(body);
+                if (!name || !steps || !Array.isArray(steps) || steps.length < 2) {
+                    res.writeHead(400);
+                    res.end(JSON.stringify({ error: 'Pattern needs name and at least 2 steps' }));
+                    return;
+                }
+                const pattern = {
+                    id: `pattern-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                    name, description: description || '',
+                    steps: steps.map(s => ({ agentId: s.agentId, taskTemplate: s.taskTemplate || s.task || '' })),
+                    createdAt: new Date().toISOString(),
+                    runCount: 0
+                };
+                intelligenceData.savedPatterns.unshift(pattern);
+                saveIntelligence();
+                logSystemEvent('pattern_saved', 'system', `Pattern "${name}" saved (${steps.length} steps)`);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true, pattern }));
+            } catch (e) {
+                res.writeHead(400);
+                res.end(JSON.stringify({ error: e.message }));
+            }
+        });
+        return;
+    }
+
+    // System health
+    if (req.url === '/api/intelligence/system-health' && req.method === 'GET') {
+        const now = Date.now();
+        const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+        const weekStart = new Date(now - 7 * 86400000);
+
+        const todayTasks = completedResults.filter(r => r.endedAt >= todayStart.getTime()).length;
+        const weekTasks = completedResults.filter(r => r.endedAt >= weekStart.getTime()).length;
+        const allTasks = completedResults.length;
+
+        // Total token costs across all agents
+        let totalCost = 0;
+        let totalTokens = 0;
+        for (const agent of AGENTS) {
+            const stats = getAgentTokenStats(agent.id);
+            totalCost += stats.totalCost || 0;
+            totalTokens += stats.totalTokens || 0;
+        }
+
+        const lastPipeline = activePipelines[0] || null;
+        const recentEvents = intelligenceData.systemEvents.slice(0, 20);
+
+        // Agent statuses
+        const agentStatuses = AGENTS.map(a => ({
+            id: a.id, name: a.name,
+            status: agentStates[a.id]?.status || 'idle',
+            queueLength: (agentQueues[a.id] || []).length
+        }));
+
+        const mem = process.memoryUsage();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+            uptime: process.uptime(),
+            memory: { rss: mem.rss, heapUsed: mem.heapUsed, heapTotal: mem.heapTotal },
+            tasks: { today: todayTasks, week: weekTasks, all: allTasks },
+            tokens: { total: totalTokens, cost: totalCost },
+            lastPipeline: lastPipeline ? { id: lastPipeline.id, name: lastPipeline.name, status: lastPipeline.status } : null,
+            agentStatuses,
+            events: recentEvents,
+            scheduledCount: scheduledTasks.length,
+            pipelineCount: activePipelines.length
+        }));
+        return;
+    }
+
     // ─── SSE endpoint for real-time updates ───────────────────────────
     if (req.url === '/agents/events' && req.method === 'GET') {
         res.writeHead(200, {
@@ -2452,4 +3056,5 @@ server.listen(PORT, () => {
     console.log(`Runs file: ${RUNS_FILE}`);
     console.log(`Agents base: ${AGENTS_BASE}`);
     console.log(`Watching for completions...`);
+    logSystemEvent('server_start', 'system', `Server started on port ${PORT}`);
 });
