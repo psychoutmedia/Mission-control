@@ -74,6 +74,17 @@ This transforms me from reactive (waiting for prompts) to proactive (pulling wor
 - **Progress**: Pillar 3 (Agents) very advanced — 44+ agents built; Pillar 2 (LLM internals) strong; Pillar 1 solid; Pillars 4-6 ongoing
 - **Focus**: Python for AI frameworks (not basic apps), agent systems, production deployment
 
+### LeetCode Progress (Pillar 6 - Interview Prep)
+- **Total Solved**: 20+ medium difficulty problems across sessions
+- **Recent Sessions**:
+  - Apr 11: Word Search, Pacific Atlantic Water Flow, Accounts Merge
+  - Apr 10 evening: Course Schedule II, Longest Consecutive Sequence, Find Min in Rotated Array
+  - Apr 10: Binary Tree Inorder, Merge Intervals, LRU Cache
+  - Apr 9: Valid Parentheses, Number of Islands, Clone Graph
+  - Mar 17: 14 tasks including agent builds
+  - Mar 12-13: Multiple sessions, 18 problems in one day
+- **Techniques Learned**: DFS, BFS, graph traversal, cycle detection (Floyd's), interval merging, binary search
+
 ## Systems & Tools
 - **Clawdbot**: Main AI assistant (Astra - chaotic seer personality)
 - **Mission Control**: Custom kanban dashboard (`mission-control.html`)
