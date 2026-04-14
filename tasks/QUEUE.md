@@ -8,13 +8,13 @@
 
 ## Ready
 
-- [ ] @astra: Research RLHF and Constitutional AI (alignment techniques) → memory/rlhf-constitutional-ai.md
 - [ ] @astra: Fix git push issue in multi-agent-dashboard (large Electron binary) → projects/multi-agent-dashboard/
 
 ---
 
 ## Done 2026-04-14
 
+- [x] @astra: Research RLHF and Constitutional AI (alignment techniques) → memory/rlhf-constitutional-ai.md
 - [x] @astra: LeetCode practice — Strings & Dynamic Programming (Longest Palindromic Substring, Edit Distance, Word Break) → memory/2026-04-14-leetcode-evening.md
 - [x] @astra: Research MLOps for LLMs (MLflow, Weights & Biases, DVC, experiment tracking) → memory/mlops-llms.md
 - [x] @astra: LeetCode practice — Two Pointers & Sliding Window (3 mediums: Valid Palindrome II, Longest Substring, Minimum Window Substring) → memory/2026-04-14-leetcode-pm.md
