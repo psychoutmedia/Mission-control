@@ -8,9 +8,26 @@
 
 ## Ready
 
-- [ ] *(none)*
+- [x] @astra: LeetCode practice — Arrays & Hashing (3 mediums: Contains Duplicate, Valid Anagram, Two Sum) → memory/2026-04-14-leetcode.md
 
 ---
+
+## Done 2026-04-14
+
+- [x] @astra: LeetCode practice — Arrays & Hashing (3 mediums: Contains Duplicate, Valid Anagram, Two Sum) → memory/2026-04-14.md
+
+## Done 2026-04-13
+
+- [x] @astra: LeetCode practice — Trees & DP (4 mediums: Level Order, Validate BST, Coin Change, House Robber) → memory/2026-04-13-leetcode.md
+- [x] @astra: Build custom PyTorch DataLoader for transformer training (MLM collator, dynamic padding, attention masking) → projects/transformer_dataloader.py
+
+## Done 2026-04-12
+
+- [x] @astra: LeetCode practice - 3 medium (Number of Islands, Clone Graph, Sudoku Solver) → memory/2026-04-12-leetcode.md
+- [x] @astra: Build attention visualization tool (hook-based, heatmaps, per-head plots) → projects/attention_viz/
+- [x] @astra: Research LLM inference optimization (KV cache, batching, speculative decoding) → memory/llm-inference-optimization.md
+- [x] @astra: LeetCode practice - 3 medium (Search in Rotated Array, Min Subarray Len, Longest Substring) → memory/2026-04-12-leetcode-pm.md
+- [x] @astra: Build chain-of-thought streaming agent (Ollama/OpenAI backends, step parsing) → projects/cot_streaming_agent/
 
 ## Done 2026-04-09
 

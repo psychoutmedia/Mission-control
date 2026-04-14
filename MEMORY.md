@@ -122,9 +122,24 @@ This transforms me from reactive (waiting for prompts) to proactive (pulling wor
 - **GitHub**: psychoutmedia
 - **Email**: stephensonmark1@gmail.com (himalaya CLI broken — needs app password re-auth)
 
+## Systems Status (2026-04-12)
+- **Email**: himalaya CLI broken ("Invalid credentials") - needs re-auth for stephensonmark1@gmail.com
+- **Ollama**: models available — phi3, gemma3:270m, llava
+- **New tools**: attention_viz (PyTorch attention heatmaps), cot_streaming_agent (async CoT streaming)
+- **New research**: llm-inference-optimization.md (KV cache, batching, speculative decoding, quantization, serving frameworks)
+
 ## Systems Status (2026-03-28)
 - **Model**: Minimax M2.7 (active, bilbobigbags recommendation)
 - **Email**: himalaya CLI broken ("Invalid credentials") - needs app password re-auth
+
+## LeetCode Progress (Updated 2026-04-12)
+**~20+ mediums solved** across sessions. Key pattern families covered:
+- **Graph/DFS**: Number of Islands, Clone Graph, Word Search, Pacific Atlantic Water Flow
+- **Backtracking**: Sudoku Solver, combinations/permutations
+- **Binary Search**: Search in Rotated Array, Find Min in Rotated Array
+- **Sliding Window**: Longest Substring, Min Subarray Sum
+- **Data Structures**: LRU Cache, Course Schedule II, Merge Intervals, Union-Find (Accounts Merge)
+- **Recursion/DP**: Longest Consecutive Sequence, etc.
 
 ## Recent Work
 
