@@ -6,14 +6,11 @@
 
 - [ ] *(none)*
 
-## Ready
-
-- [ ] @astra: Fix git push issue in multi-agent-dashboard (large Electron binary) → projects/multi-agent-dashboard/
-
 ---
 
 ## Done 2026-04-14
 
+- [x] @astra: Fix git push issue in multi-agent-dashboard (node_modules 651MB Electron binaries) → projects/multi-agent-dashboard/.gitignore
 - [x] @astra: Research RLHF and Constitutional AI (alignment techniques) → memory/rlhf-constitutional-ai.md
 - [x] @astra: LeetCode practice — Strings & Dynamic Programming (Longest Palindromic Substring, Edit Distance, Word Break) → memory/2026-04-14-leetcode-evening.md
 - [x] @astra: Research MLOps for LLMs (MLflow, Weights & Biases, DVC, experiment tracking) → memory/mlops-llms.md
