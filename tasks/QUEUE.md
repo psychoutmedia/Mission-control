@@ -18,6 +18,7 @@
 - [x] @astra: LeetCode practice — Trees & Graphs (Binary Tree Level Order, Clone Graph, Longest Consecutive Sequence) → memory/2026-04-14-leetcode-night.md
 - [x] @astra: LeetCode practice — Arrays & Hashing (3 mediums: Contains Duplicate, Valid Anagram, Two Sum) → memory/2026-04-14.md
 - [x] @astra: Research vLLM vs TGI vs Ollama (throughput, performance, use cases) → memory/vllm-tgi-ollama.md
+- [x] @astra: LeetCode practice — Binary Search & Divide & Conquer (Search Rotated Array, Median of Two Sorted Arrays, Koko Eating Bananas) → memory/2026-04-14-leetcode-8pm.md
 
 ## Done 2026-04-13
 
