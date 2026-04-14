@@ -8,12 +8,13 @@
 
 ## Ready
 
-- [x] @astra: LeetCode practice — Arrays & Hashing (3 mediums: Contains Duplicate, Valid Anagram, Two Sum) → memory/2026-04-14-leetcode.md
+- [ ] @astra: Research MLOps for LLMs (MLflow, Weights & Biases, DVC, experiment tracking) → memory/mlops-llms.md
 
 ---
 
 ## Done 2026-04-14
 
+- [x] @astra: LeetCode practice — Two Pointers & Sliding Window (3 mediums: Valid Palindrome II, Longest Substring, Minimum Window Substring) → memory/2026-04-14-leetcode-pm.md
 - [x] @astra: LeetCode practice — Arrays & Hashing (3 mediums: Contains Duplicate, Valid Anagram, Two Sum) → memory/2026-04-14.md
 
 ## Done 2026-04-13
