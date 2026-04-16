@@ -18,6 +18,7 @@
 - [x] @astra: Portfolio README polish — cot_streaming_agent (9KB README with architecture, backends, key concepts) → projects/cot_streaming_agent/README.md
 - [x] @astra: LeetCode practice — Stack/Monotonic Stack (Daily Temperatures, Car Fleet, Min Swaps Balanced) → memory/2026-04-16-leetcode-5pm.md
 - [x] @astra: LeetCode practice — Greedy/Intervals (Non-overlapping, Meeting Rooms II, Gas Station) → memory/2026-04-16-leetcode-6pm.md
+- [x] @astra: LeetCode practice — Matrix (Set Zeroes, Spiral Matrix, Rotate Image) → memory/2026-04-16-leetcode-7pm.md
 
 ## Done 2026-04-15
 
