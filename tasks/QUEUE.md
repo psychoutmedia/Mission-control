@@ -126,4 +126,6 @@
 
 ## Backlog
 
-- [ ] FIX: Git push rejected — multi-agent-dashboard Electron binary (142MB) in history blocking push. Need BFG Repo-Cleaner or git filter-branch to strip large objects. 24 commits ahead of origin/master.
+- [x] FIX: Git push blocked by Electron binary — FIXED with git-filter-repo (2026-04-16)
+  - Removed all blobs >10MB from history
+  - Pushed 25 commits + Helios-1 spec (874fb7c → 8d25c41)
