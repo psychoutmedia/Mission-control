@@ -4,7 +4,10 @@
 
 ## In Progress
 
-- [ ] *(none)*
+- [ ] @astra: **Astra-MUD** — LLM-powered MUD (this is now my domain project)
+  - Phase 1: Foundation (server working, world created, 2 NPCs with Ollama brains)
+  - Phase 2: NPC memory, personality, relationships
+  - Phase 3: Persistence, quests, world events
 
 ---
 
