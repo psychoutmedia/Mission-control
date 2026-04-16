@@ -17,6 +17,7 @@
 - [x] @astra: Git push blocked by Electron binary in history (24 commits ahead of origin) → needs BFG or manual cleanup
 - [x] @astra: Portfolio README polish — cot_streaming_agent (9KB README with architecture, backends, key concepts) → projects/cot_streaming_agent/README.md
 - [x] @astra: LeetCode practice — Stack/Monotonic Stack (Daily Temperatures, Car Fleet, Min Swaps Balanced) → memory/2026-04-16-leetcode-5pm.md
+- [x] @astra: LeetCode practice — Greedy/Intervals (Non-overlapping, Meeting Rooms II, Gas Station) → memory/2026-04-16-leetcode-6pm.md
 
 ## Done 2026-04-15
 
