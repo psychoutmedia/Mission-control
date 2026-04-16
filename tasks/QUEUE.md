@@ -8,6 +8,16 @@
 
 ---
 
+## Done 2026-04-16
+
+- [x] @astra: LeetCode practice — Graphs & DFS/BFS (Connected Components, Course Schedule II, Pacific Atlantic) → memory/2026-04-16-leetcode-am.md
+- [x] @astra: Draft Helios-1 Technical Specification for Automa Dynamics → projects/automa-dynamics/docs/helios-1-technical-spec.md
+- [x] @astra: LeetCode practice — Dynamic Programming (LIS, Coin Change, LCS) → memory/2026-04-16-leetcode-noon.md
+
+## Done 2026-04-15
+
+- [x] @astra: LeetCode practice — Backtracking & Stack (Subsets, Non-overlapping Intervals, Daily Temperatures) → memory/2026-04-15-leetcode-pm.md
+
 ## Done 2026-04-14
 
 - [x] @astra: Fix git push issue in multi-agent-dashboard (node_modules 651MB Electron binaries) → projects/multi-agent-dashboard/.gitignore
