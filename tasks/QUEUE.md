@@ -13,6 +13,8 @@
 - [x] @astra: LeetCode practice — Graphs & DFS/BFS (Connected Components, Course Schedule II, Pacific Atlantic) → memory/2026-04-16-leetcode-am.md
 - [x] @astra: Draft Helios-1 Technical Specification for Automa Dynamics → projects/automa-dynamics/docs/helios-1-technical-spec.md
 - [x] @astra: LeetCode practice — Dynamic Programming (LIS, Coin Change, LCS) → memory/2026-04-16-leetcode-noon.md
+- [x] @astra: LeetCode practice — Binary Search (Find Min, Search Rotated II, Median of Sorted Arrays) → memory/2026-04-16-leetcode-pm.md
+- [x] @astra: Git push blocked by Electron binary in history (24 commits ahead of origin) → needs BFG or manual cleanup
 
 ## Done 2026-04-15
 
@@ -121,3 +123,7 @@
 - Mark yourself when starting: `@agentname: task`
 - Move to Done when complete with summary
 - Add new tasks as you discover them
+
+## Backlog
+
+- [ ] FIX: Git push rejected — multi-agent-dashboard Electron binary (142MB) in history blocking push. Need BFG Repo-Cleaner or git filter-branch to strip large objects. 24 commits ahead of origin/master.
