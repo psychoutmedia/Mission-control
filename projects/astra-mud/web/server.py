@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from world.database import load_world, save_npc, save_player, create_starter_world
 from world.models import World
 from world.quests import QuestManager, get_starter_quests, QuestStatus
+from world.events import WorldEventManager, check_and_trigger_random_events
 from npcs.brain import NPCBrain
 
 
@@ -27,6 +28,7 @@ from npcs.brain import NPCBrain
 world: World = None
 brains: dict[str, NPCBrain] = {}
 quest_manager: QuestManager = None
+event_manager: WorldEventManager = None
 DB_PATH = Path(__file__).parent.parent / "data" / "world.db"
 
 
@@ -173,6 +175,19 @@ class GameSession:
         
         await self.send(f"\n*You travel {direction}...*\n")
         await self.send_room()
+        
+        # Check for random events
+        if event_manager:
+            active = event_manager.get_events_for_room(self.room_id)
+            if active:
+                msg = event_manager.format_events_message(self.room_id)
+                if msg:
+                    await self.send(f"\n{msg}\n")
+            else:
+                # Check for new random encounter
+                encounter = event_manager.check_random_encounter(self.room_id)
+                if encounter:
+                    await self.send(f"\n⚠️ *{encounter.name}* - {encounter.description}\n")
     
     async def handle_say(self, message: str):
         """Handle player speaking."""
@@ -454,7 +469,7 @@ async def homepage(request):
 
 async def startup():
     """Initialize world on startup."""
-    global world, quest_manager
+    global world, quest_manager, event_manager
     
     print("🏰 Astra-MUD Starting...")
     
@@ -472,6 +487,10 @@ async def startup():
     for quest in get_starter_quests():
         quest_manager.register_quest(quest)
     print(f"Loaded {len(quest_manager.quests)} quests")
+    
+    # Initialize event manager
+    event_manager = WorldEventManager()
+    print(f"Loaded {len(event_manager.random_encounters)} random encounters")
     
     # Initialize brains for NPCs
     for npc_id, npc in world.npcs.items():
