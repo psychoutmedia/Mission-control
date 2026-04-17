@@ -30,26 +30,33 @@ An immersive text-based MUD where:
 
 ## Core Systems
 
-### 1. World State
+### 1. World State ✓
 - Rooms, items, NPCs, player states
 - SQLite for persistence
 - Transaction-based updates
 
-### 2. NPC Brain (LLM-powered)
+### 2. NPC Brain ✓ (LLM-powered)
 - Each NPC is an agent with memory
 - Ollama backend (phi3, llama3, etc.)
 - Prompt templates for character consistency
 - Memory system: episodic + semantic
+- Relationship tracking (HOSTILE → ALLIED scale)
 
-### 3. Event System
+### 3. Event System ✓
 - Player actions trigger events
 - NPCs react in real-time
 - World reacts to major events
+- Random encounters (rats, skeletons, spirits, treasure)
+- Timed world events (earthquakes, dragon stirs)
 
-### 4. Communication
+### 4. Quest System ✓
+- QuestManager with objectives and rewards
+- Quest chains with prerequisites
+- 3 starter quests implemented
+
+### 5. Communication ✓
 - WebSocket for real-time play
-- REST API for admin/tools
-- Telnet bridge (optional)
+- Web client at http://localhost:8765
 
 ## Project Structure
 
@@ -58,45 +65,48 @@ astra-mud/
 ├── world/
 │   ├── models.py       # Room, Item, NPC, Player
 │   ├── database.py     # SQLite operations
-│   └── events.py       # Event bus
+│   ├── quests.py       # Quest system
+│   └── events.py       # World events & encounters
 ├── npcs/
 │   ├── brain.py        # LLM NPC controller
-│   ├── memory.py       # NPC memory system
+│   ├── memory.py       # NPC memory + relationships
 │   ├── personality.py  # Character templates
-│   └── behaviors/      # NPC behavior trees
+│   └── behaviors.py    # Personality-driven behaviors
 ├── llm/
-│   ├── backend.py      # Ollama/OpenAI abstraction
-│   └── prompts/        # System prompts
+│   └── backend.py      # Ollama/OpenAI abstraction
 ├── web/
 │   ├── server.py       # Starlette WebSocket server
-│   ├── static/         # CSS, JS
-│   └── templates/      # HTML
-├── players/
-│   ├── session.py      # Player session management
-│   └── commands.py     # Command parser
+│   └── templates/      # HTML game client
+├── players/            # (future)
 └── main.py             # Entry point
 ```
 
-## MVP Scope
+## Current Features
 
-### Phase 1: Foundation
-- [x] Project structure
-- [ ] World state (rooms, items, basic NPC)
-- [ ] WebSocket server
-- [ ] Simple command parser
-- [ ] One test NPC with Ollama
+### Rooms (5)
+- Dungeon Entrance → Torch-Lit Corridor → Grand Chamber
+- Armory (east of corridor)
+- Dragon's Hoard (treasury, north of chamber)
 
-### Phase 2: NPC Brains
-- [ ] NPC memory system
-- [ ] Personality templates
-- [ ] Multi-NPC conversations
-- [ ] Player-NPC relationship tracking
+### NPCs (2)
+- **Skeleton Guard** - Hostile, protective (hallway)
+- **Ancient Dragon** - Sleeping, powerful (treasury)
 
-### Phase 3: Persistence & World
-- [ ] Save/load world state
-- [ ] Player accounts
-- [ ] World-changing events
-- [ ] Quest system
+### Commands
+- `n/s/e/w` - Movement
+- `look` - Examine room
+- `say [msg]` - Speak
+- `talk to [npc]` - Talk to NPC
+- `attack [npc]` - Attack NPC
+- `inventory` - Check belongings
+- `quests` / `quest [id]` - Quest management
+- `status` - Quest progress
+
+### Random Encounters (4)
+- Rat Swarm (30% chance)
+- Skeleton Rogue (15% chance)
+- Wandering Spirit (20%, non-hostile)
+- Treasure Chest (5%, loot drops)
 
 ## Tech Stack
 
