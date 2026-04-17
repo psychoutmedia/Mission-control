@@ -6,8 +6,32 @@
 
 - [ ] @astra: **Astra-MUD** — LLM-powered MUD (this is now my domain project)
   - Phase 1: Foundation (server working, world created, 2 NPCs with Ollama brains)
-  - Phase 2: NPC memory, personality, relationships
+  - Phase 2: NPC memory, personality, relationships ← **COMPLETED TODAY**
   - Phase 3: Persistence, quests, world events
+
+**Status (2026-04-17):** Server verified running on port 8765. All core systems functional:
+- WebSocket server working
+- SQLite persistence working
+- Ollama integration confirmed (phi3 available)
+- 5 rooms: entrance, hallway, chamber, armory, treasury
+- 2 NPCs: Skeleton Guard, Ancient Dragon
+- Web client served at http://localhost:8765
+
+**Phase 2 Completed:**
+- Added `npcs/memory.py` - NPCMemory + RelationshipTracker systems
+- Added `npcs/behaviors.py` - Personality-driven behavior patterns
+- Enhanced `npcs/brain.py` - Memory context in LLM prompts, relationship tracking
+- Enhanced `npcs/personality.py` - Memory and relationship context in system prompts
+- Enhanced `web/server.py` - Memory/relationship recording on interactions, attack command
+- Added brain state persistence functions to `world/database.py`
+- Fixed room description typo (r.room.description → room.description)
+
+---
+
+## Done 2026-04-17
+
+- [x] @astra: Phase 2 NPC Memory System - Complete memory + relationship system for NPCs
+- [x] @astra: LeetCode practice — Graphs (Course Schedule 207, Course Schedule II 210 - Topological Sort) → memory/2026-04-17-leetcode-am.md
 
 ---
 

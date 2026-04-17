@@ -30,7 +30,7 @@ DB_PATH = Path(__file__).parent.parent / "data" / "world.db"
 
 async def get_room_description(room, world: World) -> str:
     """Build rich room description."""
-    desc = f"**{room.name}**\n\n{r.room.description}\n"
+    desc = f"**{room.name}**\n\n{room.description}\n"
     
     # Exits
     if room.exits:
@@ -117,8 +117,14 @@ class GameSession:
 - `look` - Examine room
 - `say [message]` - Speak aloud
 - `talk to [npc]` - Talk to an NPC
+- `attack [npc]` - Attack an NPC
 - `inventory` - Check your belongings
 - `help` - Show this message""")
+        
+        # Attack NPC
+        elif cmd.startswith("attack ") or cmd.startswith("kill ") or cmd.startswith("fight "):
+            npc_name = cmd.replace("attack ", "").replace("kill ", "").replace("fight ", "").strip()
+            await self.handle_attack(npc_name)
         
         else:
             await self.send(f"You can't do that.")
@@ -166,7 +172,16 @@ class GameSession:
             if npc and npc_id in brains:
                 brain = brains[npc_id]
                 context = f"The player '{self.player_name}' just said: '{message}'"
-                response = await brain.think(f"The player says: {message}", context)
+                response = await brain.think(f"The player says: {message}", context, player_id=self.player_id)
+                
+                # Record this interaction
+                brain.record_interaction(
+                    self.player_id,
+                    f"Player said '{message}'",
+                    response[:100],
+                    delta=0  # Neutral - just talking
+                )
+                
                 if response:
                     await self.send(f"\n*{npc.name} responds: {response}*\n")
     
@@ -201,7 +216,16 @@ class GameSession:
         
         response = await brain.think(
             f"The player '{self.player_name}' wants to talk. Start a conversation as {npc.name}.",
-            context
+            context,
+            player_id=self.player_id
+        )
+        
+        # Record this interaction
+        brain.record_interaction(
+            self.player_id,
+            "Player initiated conversation",
+            response[:100] if response else "",
+            delta=+5  # Positive interaction
         )
         
         await self.send(f"\n*{npc.name}: {response}*\n")
@@ -224,6 +248,67 @@ class GameSession:
         items = [world.get_item(i) for i in player.inventory if world.get_item(i)]
         item_list = "\n".join(f"- *{i.name}*: {i.description}" for i in items)
         await self.send(f"**Inventory:**\n{item_list}")
+    
+    async def handle_attack(self, npc_name: str):
+        """Handle attacking an NPC."""
+        room = world.get_room(self.room_id)
+        if not room:
+            return
+        
+        npc = world.get_npc_by_name(npc_name, self.room_id)
+        if not npc:
+            await self.send(f"There's no one called '{npc_name}' here.")
+            return
+        
+        await self.send(f"\n*You attack {npc.name}!*")
+        
+        # Record this interaction (negative)
+        if npc.id in brains:
+            brain = brains[npc.id]
+            brain.record_interaction(
+                self.player_id,
+                f"Player attacked {npc.name}",
+                "In combat",
+                delta=-20  # Negative interaction
+            )
+        
+        # NPCs react based on personality
+        if npc.id in brains:
+            brain = brains[npc.id]
+            
+            # Get relationship
+            rel = brain.relationships.get_relationship(self.player_id)
+            
+            # Cowardly NPCs flee
+            if "cowardly" in npc.personality.get("traits", []):
+                await self.send(f"\n*{npc.name} screams in terror and flees!*")
+                # Move NPC out of room (simplified)
+                return
+            
+            # Hostile/aggressive NPCs fight back
+            if "hostile" in npc.personality.get("traits", []) or "aggressive" in npc.personality.get("traits", []):
+                await self.send(f"\n*{npc.name} retaliates with fury!*")
+                # LLM generates combat response
+                response = await brain.think(
+                    f"The player '{self.player_name}' is attacking you! React as {npc.name} in combat.",
+                    f"You are in combat with {self.player_name}!",
+                    player_id=self.player_id
+                )
+                if response:
+                    await self.send(f"\n*{npc.name}: {response}*")
+                return
+            
+            # Normal NPCs defend themselves
+            response = await brain.think(
+                f"The player '{self.player_name}' is attacking you! React as {npc.name}.",
+                f"You are being attacked by {self.player_name}!",
+                player_id=self.player_id
+            )
+            if response:
+                await self.send(f"\n*{npc.name}: {response}*")
+        
+        else:
+            await self.send(f"\n*{npc.name} is confused by your attack.*")
 
 
 # Store active sessions

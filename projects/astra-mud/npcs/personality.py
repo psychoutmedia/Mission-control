@@ -3,7 +3,7 @@ Astra-MUD: NPC Personality Templates
 System prompts for consistent NPC behavior
 """
 
-from typing import List
+from typing import List, Optional
 
 
 def build_system_prompt(
@@ -11,6 +11,8 @@ def build_system_prompt(
     personality: dict,
     conversation_history: List[dict],
     world_context: str,
+    memory_context: Optional[str] = None,
+    relationship_context: Optional[str] = None,
 ) -> str:
     """Build system prompt for NPC with personality and context."""
     
@@ -40,6 +42,10 @@ def build_system_prompt(
 
 **The World:**
 {world_context}
+
+{f"**Your Memories:**\n{memory_context}" if memory_context else ""}
+
+{f"**Relationship:**\n{relationship_context}" if relationship_context else ""}
 
 **How You Speak:**
 - Stay in character at all times

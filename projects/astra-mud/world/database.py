@@ -298,3 +298,40 @@ async def create_starter_world(db_path: str = str(DB_PATH)):
         await save_npc(db_path, npc)
     
     return world
+
+
+async def save_brain_state(db_path: str, npc_id: str, brain_state: dict):
+    """Save NPC brain state (memory, relationships) to database."""
+    db_path = Path(db_path)
+    async with aiosqlite.connect(db_path) as db:
+        await db.execute(
+            "INSERT OR REPLACE INTO npc_brains (npc_id, data) VALUES (?, ?)",
+            (npc_id, json.dumps(brain_state))
+        )
+        await db.commit()
+
+
+async def load_brain_state(db_path: str, npc_id: str) -> Optional[dict]:
+    """Load NPC brain state from database."""
+    db_path = Path(db_path)
+    async with aiosqlite.connect(db_path) as db:
+        async with db.execute(
+            "SELECT data FROM npc_brains WHERE npc_id = ?", (npc_id,)
+        ) as cursor:
+            row = await cursor.fetchone()
+            if row:
+                return json.loads(row[0])
+    return None
+
+
+async def init_brain_db(db_path: str = str(DB_PATH)):
+    """Initialize brain state tables."""
+    db_path = Path(db_path)
+    async with aiosqlite.connect(db_path) as db:
+        await db.executescript("""
+            CREATE TABLE IF NOT EXISTS npc_brains (
+                npc_id TEXT PRIMARY KEY,
+                data TEXT NOT NULL
+            );
+        """)
+        await db.commit()

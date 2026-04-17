@@ -3,14 +3,15 @@
     "email": null,
     "calendar": null,
     "weather": 1744698000,
-    "securityScan": 1744516200,
+    "securityScan": 1744876920,
     "factExtraction": null,
-    "heartbeat": 1744698000
+    "heartbeat": 1744879920
   },
   "issues": [
     "himalaya email CLI needs re-authentication - Invalid credentials since ~Mar 28",
-    "gog calendar OAuth not configured - needs credentials setup",
-    "git push blocked - large Electron file in multi-agent-dashboard"
+    "gog calendar OAuth not configured - needs credentials setup"
   ],
-  "lastWeeklyReview": "2026-04-11"
+  "lastWeeklyReview": "2026-04-11",
+  "serverCheck": "2026-04-17 08:02 - Astra-MUD running on port 8765 (HTTP 200)",
+  "securityScanLast": "2026-04-17 07:02 - CLEAN"
 }

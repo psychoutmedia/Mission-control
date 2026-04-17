@@ -1,6 +1,6 @@
 """
 Astra-MUD: NPC Brain
-LLM-powered NPC controller with memory
+LLM-powered NPC controller with memory and relationships
 """
 
 import aiohttp
@@ -9,6 +9,7 @@ from typing import Optional
 from datetime import datetime
 
 from .personality import build_system_prompt
+from .memory import NPCMemory, RelationshipTracker, get_memory_context, get_relationship_context
 
 
 class NPCBrain:
@@ -29,9 +30,27 @@ class NPCBrain:
         self.base_url = base_url
         self.conversation_history: list[dict] = []
         self.max_history = 20  # Keep last 20 exchanges
+        
+        # Memory system
+        self.memory = NPCMemory(npc_id)
+        self.relationships = RelationshipTracker(npc_id)
+        
+        # Personality-driven behaviors
+        self.mood = personality.get("mood", "neutral")
+        self.goals = personality.get("goals", "survive")
+        self.traits = personality.get("traits", [])
     
-    async def think(self, player_input: str, world_context: str) -> str:
+    async def think(self, player_input: str, world_context: str, player_id: Optional[str] = None) -> str:
         """Generate NPC response to player input."""
+        
+        # Build memory context
+        memory_context = ""
+        if player_id:
+            memory_context = get_memory_context(self.memory, player_id)
+            relationship_context = get_relationship_context(self.relationships, player_id, self.name)
+        else:
+            memory_context = get_memory_context(self.memory)
+            relationship_context = ""
         
         # Build system prompt with personality and recent memory
         system_prompt = build_system_prompt(
@@ -39,6 +58,8 @@ class NPCBrain:
             self.personality,
             self.conversation_history[-5:] if self.conversation_history else [],
             world_context,
+            memory_context,
+            relationship_context,
         )
         
         messages = [
@@ -86,14 +107,25 @@ class NPCBrain:
         except aiohttp.ClientError:
             return f"{self.name} is unavailable (Ollama not running)."
     
-    async def think_stream(self, player_input: str, world_context: str):
+    async def think_stream(self, player_input: str, world_context: str, player_id: Optional[str] = None):
         """Generate NPC response with streaming."""
+        
+        # Build memory context
+        memory_context = ""
+        if player_id:
+            memory_context = get_memory_context(self.memory, player_id)
+            relationship_context = get_relationship_context(self.relationships, player_id, self.name)
+        else:
+            memory_context = get_memory_context(self.memory)
+            relationship_context = ""
         
         system_prompt = build_system_prompt(
             self.name,
             self.personality,
             self.conversation_history[-5:] if self.conversation_history else [],
             world_context,
+            memory_context,
+            relationship_context,
         )
         
         messages = [
@@ -137,11 +169,17 @@ class NPCBrain:
         except aiohttp.ClientError:
             yield f"{self.name} is unavailable (Ollama not running)."
     
-    def add_memory(self, event: str):
-        """Add to conversation memory for context."""
-        # This is for explicit memories (important events)
-        # The conversation_history handles conversational context
-        pass
+    def add_memory(self, event: str, player_id: Optional[str] = None, importance: int = 3):
+        """Add an episodic memory."""
+        self.memory.add_memory(event, player_id, importance)
+    
+    def record_interaction(self, player_id: str, action: str, outcome: str, delta: int):
+        """Record an interaction and adjust relationship."""
+        # Add memory
+        self.add_memory(f"{action}: {outcome}", player_id, importance=abs(delta))
+        
+        # Adjust relationship
+        self.relationships.adjust_relationship(player_id, delta, f"{action} -> {outcome}")
     
     def clear_history(self):
         """Clear conversation history (e.g., after long absence)."""
@@ -152,9 +190,25 @@ class NPCBrain:
         return {
             "conversation_history": self.conversation_history,
             "ai_model": self.ai_model,
+            "memory": self.memory.get_state(),
+            "relationships": self.relationships.get_state(),
         }
     
     def load_state(self, state: dict):
         """Restore brain state."""
         self.conversation_history = state.get("conversation_history", [])
         self.ai_model = state.get("ai_model", self.ai_model)
+        
+        if "memory" in state:
+            self.memory = NPCMemory.from_state(state["memory"])
+        
+        if "relationships" in state:
+            self.relationships = RelationshipTracker.from_state(state["relationships"])
+    
+    def apply_personality_behavior(self, action: str) -> str:
+        """Modify action based on personality traits."""
+        if "cowardly" in self.traits and action in ["attack", "threaten"]:
+            return "flee"
+        if "aggressive" in self.traits and action == "talk":
+            return "challenge"
+        return action
