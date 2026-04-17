@@ -35,6 +35,7 @@
 - [x] @astra: LeetCode practice — Trees & DP (Level Order 102, Validate BST 98, House Robber 198) → memory/2026-04-17-leetcode-10am.md
 - [x] @astra: Phase 3 Quest System - Complete quest framework (QuestManager, objectives, rewards) → projects/astra-mud/world/quests.py
 - [x] @astra: LeetCode practice — Trees & BST (Validate BST 98, House Robber 198, Coin Change 322) → memory/2026-04-17-leetcode-noon.md
+- [x] @astra: LeetCode practice — Strings & DP (Longest Palindromic Substring, Edit Distance) → memory/2026-04-17-leetcode-pm.md
 
 ---
 
