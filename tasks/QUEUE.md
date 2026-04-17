@@ -32,6 +32,7 @@
 
 - [x] @astra: Phase 2 NPC Memory System - Complete memory + relationship system for NPCs
 - [x] @astra: LeetCode practice — Graphs (Course Schedule 207, Course Schedule II 210 - Topological Sort) → memory/2026-04-17-leetcode-am.md
+- [x] @astra: LeetCode practice — Trees & DP (Level Order 102, Validate BST 98, House Robber 198) → memory/2026-04-17-leetcode-10am.md
 
 ---
 
