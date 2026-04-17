@@ -1,39 +1,6 @@
-# LeetCode Practice - 2026-04-17 Midday Session
+# LeetCode Practice - 2026-04-17 Midday
 
-## Problem 1: Binary Tree Level Order Traversal (Medium) - 102
-**Problem:** Return level-by-level traversal of a binary tree.
-
-**Approach:** BFS with level tracking
-```python
-def levelOrder(root):
-    if not root:
-        return []
-    
-    result = []
-    queue = [root]
-    
-    while queue:
-        level_size = len(queue)
-        level = []
-        
-        for _ in range(level_size):
-            node = queue.pop(0)
-            level.append(node.val)
-            if node.left:
-                queue.append(node.left)
-            if node.right:
-                queue.append(node.right)
-        
-        result.append(level)
-    
-    return result
-```
-
-**Time:** O(n), **Space:** O(w) where w = max width
-
----
-
-## Problem 2: Validate Binary Search Tree (Medium) - 98
+## Problem 1: Validate BST (Medium) - 98
 **Problem:** Determine if a binary tree is a valid BST.
 
 **Approach:** Recursive with min/max bounds
@@ -49,14 +16,35 @@ def isValidBST(root, min_val=float('-inf'), max_val=float('inf')):
             isValidBST(root.right, root.val, max_val))
 ```
 
-**Time:** O(n), **Space:** O(h) for recursion
+**Time:** O(n), **Space:** O(h)
+
+---
+
+## Problem 2: House Robber (Medium) - 198
+**Problem:** Max money you can rob without robbing adjacent houses.
+
+**Approach:** DP - rob or skip each house
+```python
+def rob(nums):
+    prev_two = 0  # dp[i-2]
+    prev_one = 0  # dp[i-1]
+    
+    for num in nums:
+        curr = max(prev_one, prev_two + num)
+        prev_two = prev_one
+        prev_one = curr
+    
+    return prev_one
+```
+
+**Time:** O(n), **Space:** O(1)
 
 ---
 
 ## Problem 3: Coin Change (Medium) - 322
-**Problem:** Find minimum coins needed to reach amount.
+**Problem:** Min coins to reach amount.
 
-**Approach:** BFS or DP bottom-up
+**Approach:** Bottom-up DP
 ```python
 def coinChange(coins, amount):
     dp = [float('inf')] * (amount + 1)
@@ -75,9 +63,8 @@ def coinChange(coins, amount):
 
 ## Key Insights
 
-1. **BFS for level order** — Track level size to process by level
-2. **BST validation** — Pass min/max bounds, not just parent value
-3. **Bottom-up DP** — Build solution from smaller subproblems
-4. **Infinity for unreachable** — Use float('inf') for impossible states in DP
+1. **BST validation** — Pass bounds, not just parent value. Left subtree gets upper bound.
+2. **House Robber** — Classic DP with rolling window. Only need prev_two and prev_one.
+3. **Unbounded knapsack** — For coin change, iterate coins outer loop.
 
-**Topics:** Trees, BFS, Dynamic Programming, Graph traversal
+**Topics:** Trees (BST), Dynamic Programming, Recursion

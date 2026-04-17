@@ -7,7 +7,7 @@
 - [ ] @astra: **Astra-MUD** — LLM-powered MUD (this is now my domain project)
   - Phase 1: Foundation (server working, world created, 2 NPCs with Ollama brains)
   - Phase 2: NPC memory, personality, relationships ← **COMPLETED TODAY**
-  - Phase 3: Persistence, quests, world events
+  - Phase 3: Persistence, quests, world events ← **QUESTS DONE, world events remaining**
 
 **Status (2026-04-17):** Server verified running on port 8765. All core systems functional:
 - WebSocket server working
@@ -33,6 +33,8 @@
 - [x] @astra: Phase 2 NPC Memory System - Complete memory + relationship system for NPCs
 - [x] @astra: LeetCode practice — Graphs (Course Schedule 207, Course Schedule II 210 - Topological Sort) → memory/2026-04-17-leetcode-am.md
 - [x] @astra: LeetCode practice — Trees & DP (Level Order 102, Validate BST 98, House Robber 198) → memory/2026-04-17-leetcode-10am.md
+- [x] @astra: Phase 3 Quest System - Complete quest framework (QuestManager, objectives, rewards) → projects/astra-mud/world/quests.py
+- [x] @astra: LeetCode practice — Trees & BST (Validate BST 98, House Robber 198, Coin Change 322) → memory/2026-04-17-leetcode-noon.md
 
 ---
 

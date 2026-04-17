@@ -19,12 +19,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from world.database import load_world, save_npc, save_player, create_starter_world
 from world.models import World
+from world.quests import QuestManager, get_starter_quests, QuestStatus
 from npcs.brain import NPCBrain
 
 
 # Global world state
 world: World = None
 brains: dict[str, NPCBrain] = {}
+quest_manager: QuestManager = None
 DB_PATH = Path(__file__).parent.parent / "data" / "world.db"
 
 
@@ -119,7 +121,21 @@ class GameSession:
 - `talk to [npc]` - Talk to an NPC
 - `attack [npc]` - Attack an NPC
 - `inventory` - Check your belongings
+- `quests` - View available quests
+- `quest [id]` - Accept a quest
+- `status` - View your quest progress
 - `help` - Show this message""")
+        
+        # Quests
+        elif cmd in ["quests", "q"]:
+            await self.handle_quests()
+        
+        elif cmd.startswith("quest "):
+            quest_id = cmd[6:].strip()
+            await self.handle_accept_quest(quest_id)
+        
+        elif cmd in ["status", "s"]:
+            await self.handle_quest_status()
         
         # Attack NPC
         elif cmd.startswith("attack ") or cmd.startswith("kill ") or cmd.startswith("fight "):
@@ -309,6 +325,65 @@ class GameSession:
         
         else:
             await self.send(f"\n*{npc.name} is confused by your attack.*")
+    
+    async def handle_quests(self):
+        """List available quests."""
+        available = quest_manager.get_available_quests(self.player_id)
+        active = quest_manager.get_active_quests(self.player_id)
+        
+        msg = "**Quests**\n\n"
+        
+        if active:
+            msg += "*Active Quests:*\n"
+            for quest in active:
+                msg += f"- *{quest.title}* ({quest.status.value})\n"
+                for obj in quest.objectives:
+                    status = "✓" if obj.completed else "○"
+                    msg += f"  {status} {obj.description} ({obj.current_count}/{obj.target_count})\n"
+            msg += "\n"
+        
+        if available:
+            msg += "*Available Quests:*\n"
+            for quest in available:
+                diff = quest.difficulty.name
+                msg += f"- *{quest.title}* [{diff}] - {quest.description[:50]}...\n"
+                msg += f"  Rewards: {quest.reward_xp} XP, {quest.reward_gold} gold\n"
+                msg += f"  Type `quest {quest.id}` to accept.\n\n"
+        else:
+            msg += "*No available quests.*\n"
+        
+        await self.send(msg)
+    
+    async def handle_accept_quest(self, quest_id: str):
+        """Accept a quest."""
+        quest = quest_manager.offer_quest(quest_id, self.player_id)
+        if not quest:
+            await self.send("That quest is not available.")
+            return
+        
+        quest_manager.accept_quest(quest_id, self.player_id)
+        await self.send(f"\n*You accept the quest: {quest.title}*\n")
+        await self.send(f"**Objective:** {quest.description}\n")
+        for obj in quest.objectives:
+            await self.send(f"- {obj.description} ({obj.current_count}/{obj.target_count})")
+    
+    async def handle_quest_status(self):
+        """Show quest progress."""
+        active = quest_manager.get_active_quests(self.player_id)
+        
+        if not active:
+            await self.send("You have no active quests. Type `quests` to see available quests.")
+            return
+        
+        msg = "**Your Quests**\n\n"
+        for quest in active:
+            msg += f"*{quest.title}* [{quest.status.value}]\n"
+            for obj in quest.objectives:
+                status = "✓" if obj.completed else "○"
+                msg += f"  {status} {obj.description} ({obj.current_count}/{obj.target_count})\n"
+            msg += "\n"
+        
+        await self.send(msg)
 
 
 # Store active sessions
@@ -379,7 +454,7 @@ async def homepage(request):
 
 async def startup():
     """Initialize world on startup."""
-    global world
+    global world, quest_manager
     
     print("🏰 Astra-MUD Starting...")
     
@@ -391,6 +466,12 @@ async def startup():
         print("Creating new world...")
         world = await create_starter_world(str(DB_PATH))
         print(f"Created world with {len(world.rooms)} rooms")
+    
+    # Initialize quest manager
+    quest_manager = QuestManager()
+    for quest in get_starter_quests():
+        quest_manager.register_quest(quest)
+    print(f"Loaded {len(quest_manager.quests)} quests")
     
     # Initialize brains for NPCs
     for npc_id, npc in world.npcs.items():
