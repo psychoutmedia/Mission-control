@@ -299,10 +299,61 @@ def create_merchant_quest() -> Quest:
     return quest
 
 
+def create_scholar_tome_quest() -> Quest:
+    """Quest: The Scholar's Spirit wants the Tome of Shadows from the Crypt."""
+    quest = Quest(
+        id="scholar_tome",
+        title="The Lost Knowledge",
+        description="The Scholar's Spirit in the library seeks a tome hidden in the Crypt below. Bring the Tome of Shadows to prove that knowledge is not forgotten.",
+        giver_id="scholar_ghost",
+        difficulty=QuestDifficulty.MEDIUM,
+        reward_xp=150,
+        reward_gold=75,
+    )
+    quest.add_objective("Find the Tome of Shadows in the Crypt", "visit", "crypt", 1)
+    quest.add_objective("Return the tome to the Scholar's Spirit", "talk", "scholar_ghost", 1)
+    return quest
+
+
+def create_fairy_bell_quest() -> Quest:
+    """Quest: Thornweaver lost her silver bell to a Wandering Spirit."""
+    quest = Quest(
+        id="fairy_bell",
+        title="The Fairy's Bell",
+        description="Thornweaver in the Garden of Thorns mourns her silver bell. It was taken by a Wandering Spirit. Perhaps if you find the spirit, you can return what was lost.",
+        giver_id="fairy_queen",
+        difficulty=QuestDifficulty.MEDIUM,
+        reward_xp=100,
+        reward_gold=50,
+    )
+    quest.add_objective("Find the Wandering Spirit", "interact", "wandering_spirit", 1)
+    quest.add_objective("Return the Silver Bell to Thornweaver", "talk", "fairy_queen", 1)
+    return quest
+
+
+def create_dragon_riddle_quest() -> Quest:
+    """Quest: Solve the dragon's riddle for a piece of its hoard."""
+    quest = Quest(
+        id="dragon_riddle",
+        title="The Dragon's Riddle",
+        description="The ancient dragon Velathor speaks in riddles and puzzles. It has posed a question: 'I have cities, but no houses. I have mountains, but no trees. I have water, but no fish. What am I?' Answer correctly, and treasure shall be yours.",
+        giver_id="gold_dragon",
+        difficulty=QuestDifficulty.HARD,
+        reward_xp=300,
+        reward_gold=200,
+        prerequisites=["scholar_tome"],  # Need some lore knowledge
+    )
+    quest.add_objective("Solve the dragon's riddle", "interact", "gold_dragon", 1)
+    return quest
+
+
 def get_starter_quests() -> list[Quest]:
     """Get all starter quests."""
     return [
         create_skeleton_guard_quest(),
         create_dragon_quest(),
         create_merchant_quest(),
+        create_scholar_tome_quest(),
+        create_fairy_bell_quest(),
+        create_dragon_riddle_quest(),
     ]

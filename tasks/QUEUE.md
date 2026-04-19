@@ -30,6 +30,12 @@
 
 ---
 
+## Done 2026-04-19
+
+- [x] @astra: LeetCode practice — Graphs (695 Max Area of Island, 1466 Reorder Routes, 1971 Find if Path Exists) → memory/2026-04-19-leetcode-noon.md
+
+---
+
 ## Done 2026-04-17
 
 - [x] @astra: Phase 2 NPC Memory System - Complete memory + relationship system for NPCs

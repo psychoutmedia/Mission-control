@@ -1,10 +1,10 @@
 {
   "lastChecks": {
-    "email": null,
+    "email": 1745040120,
     "calendar": null,
     "weather": null,
-    "securityScan": 1744876920,
+    "securityScan": null,
     "factExtraction": null,
-    "heartbeat": 1744899720
+    "heartbeat": 1745040120
   }
 }

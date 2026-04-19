@@ -174,7 +174,7 @@ async def save_item(db_path: str, item: Item):
 
 
 async def create_starter_world(db_path: str = str(DB_PATH)):
-    """Create a starter world with a basic dungeon."""
+    """Create a starter world with expanded dungeon."""
     await init_db(db_path)
     world = World()
     
@@ -182,8 +182,16 @@ async def create_starter_world(db_path: str = str(DB_PATH)):
     entrance = Room(
         id="entrance",
         name="Dungeon Entrance",
-        description="You stand at the mouth of an ancient dungeon. Cold air drifts from within. A moss-covered stone archway marks the entrance.",
+        description="You stand at the mouth of an ancient dungeon. Cold air drifts from within. A moss-covered stone archway marks the entrance. To the west, an ancient stone well sits covered in ivy.",
         exits={"north": "hallway", "outside": "wild"},
+    )
+    
+    # Create the Wishing Well
+    well = Room(
+        id="well",
+        name="The Wishing Well",
+        description="A crumbling stone well dominates this small alcove. Ivy and moss climb its ancient stones. The water below glimmers with an unnatural light. Coins glitter at the bottom. Something about this place makes you want to make a wish...",
+        exits={"east": "entrance"},
     )
     
     # Create hallway
@@ -198,16 +206,16 @@ async def create_starter_world(db_path: str = str(DB_PATH)):
     chamber = Room(
         id="chamber",
         name="Grand Chamber",
-        description="A vast chamber opens before you. Ancient columns rise to a ceiling lost in darkness. Something glints in the shadows to the north.",
-        exits={"south": "hallway", "north": "treasury"},
+        description="A vast chamber opens before you. Ancient columns rise to a ceiling lost in darkness. Something glints in the shadows to the north. To the west, a heavy door is covered in dust and cobwebs. To the east, an archway is overgrown with thorny vines.",
+        exits={"south": "hallway", "north": "treasury", "west": "library", "east": "garden"},
     )
     
     # Create armory
     armory = Room(
         id="armory",
         name="Ruined Armory",
-        description="Weapon racks line the walls, most empty or rusted beyond use. A single sword gleams on a pedestal.",
-        exits={"west": "hallway"},
+        description="Weapon racks line the walls, most empty or rusted beyond use. A single sword gleams on a pedestal. A dark staircase descends into shadow to the south.",
+        exits={"west": "hallway", "down": "crypt"},
     )
     
     # Create treasury
@@ -218,12 +226,40 @@ async def create_starter_world(db_path: str = str(DB_PATH)):
         exits={"south": "chamber"},
     )
     
+    # Create the Forgotten Library
+    library = Room(
+        id="library",
+        name="The Forgotten Library",
+        description="Towering bookshelves stretch into darkness above. Dust motes dance in the stale air. Most books have rotted away, but a few remain—tomes bound in strange leather, their pages yellowed with age. A scholar's skeleton sits at a reading desk, a quill still clutched in its bony fingers.",
+        exits={"east": "chamber"},
+    )
+    
+    # Create the Crypt
+    crypt = Room(
+        id="crypt",
+        name="The Crypt",
+        description="Stone sarcophagi line the walls, their lids carved with the faces of the dead. The air is thick and cold. Something moves in the shadows between the tombs. Bones rattle somewhere in the darkness. The dead do not rest easily here.",
+        exits={"up": "armory"},
+    )
+    
+    # Create the Garden of Thorns
+    garden = Room(
+        id="garden",
+        name="The Garden of Thorns",
+        description="Beautiful yet deadly. Black roses bloom amid razor-sharp thorns. A silver fountain sits in the center, long dry. Fireflies drift through the air, casting dancing lights. The thorns seem to part for you as you walk, as if the garden itself is watching.",
+        exits={"west": "chamber"},
+    )
+    
     # Add rooms to world
     world.add_room(entrance)
+    world.add_room(well)
     world.add_room(hallway)
     world.add_room(chamber)
     world.add_room(armory)
     world.add_room(treasury)
+    world.add_room(library)
+    world.add_room(crypt)
+    world.add_room(garden)
     
     # Create items
     from .models import Item
@@ -233,7 +269,7 @@ async def create_starter_world(db_path: str = str(DB_PATH)):
         description="An old but serviceable sword. Perfectly balanced for combat.",
         location="armory",
         item_type="weapon",
-        properties={"damage": 10, "durability": 50},
+        properties={"damage": 15, "durability": 50},
     )
     
     potion = Item(
@@ -254,9 +290,59 @@ async def create_starter_world(db_path: str = str(DB_PATH)):
         properties={"value": 100},
     )
     
+    silver_bell = Item(
+        id="silver_bell",
+        name="Silver Bell",
+        description="A delicate silver bell that chimes with an otherworldly tone. It feels wrong to be holding this.",
+        location="entrance",  # Initially with wandering spirit (via event)
+        item_type="quest",
+        properties={"quest_id": "fairy_bell"},
+    )
+    
+    ancient_tome = Item(
+        id="ancient_tome",
+        name="Tome of Shadows",
+        description="A leather-bound book that seems to drink in the light around it. Pages filled with cramped handwriting.",
+        location="crypt",
+        item_type="quest",
+        properties={"quest_id": "scholar_tome"},
+    )
+    
+    silver_dagger = Item(
+        id="silver_dagger",
+        name="Silver Dagger",
+        description="A gleaming dagger made of pure silver. The blade hums with faint magical energy.",
+        location="library",
+        item_type="weapon",
+        properties={"damage": 12, "durability": 80},
+    )
+    
+    fairy_dust = Item(
+        id="fairy_dust",
+        name="Fairy Dust",
+        description="Glittering silver powder that shimmers in the light. Strong magical properties.",
+        location="garden",
+        item_type="consumable",
+        properties={"heals": 50, "buff": "glow"},
+    )
+    
+    dragon_scale = Item(
+        id="dragon_scale",
+        name="Gold Dragon Scale",
+        description="A massive scale from the ancient dragon's hide. It glows with faint warmth.",
+        location="treasury",
+        item_type="quest",
+        properties={"quest_id": "dragon_wisdom"},
+    )
+    
     world.add_item(sword)
     world.add_item(potion)
     world.add_item(gold)
+    world.add_item(silver_bell)
+    world.add_item(ancient_tome)
+    world.add_item(silver_dagger)
+    world.add_item(fairy_dust)
+    world.add_item(dragon_scale)
     
     # Create NPCs
     from .models import NPC
@@ -286,8 +372,68 @@ async def create_starter_world(db_path: str = str(DB_PATH)):
         ai_model="phi3",
     )
     
+    # Scholar Ghost (library)
+    scholar = NPC(
+        id="scholar_ghost",
+        name="Scholar's Spirit",
+        description="The ghost of a long-dead scholar. Ancient robes hang from translucent shoulders. Spectral spectacles float before hollow eyes.",
+        room_id="library",
+        personality={
+            "traits": ["wise", "melancholic", "haunted"],
+            "goals": "Find the Codex Umbral",
+            "mood": "yearning",
+        },
+        ai_model="phi3",
+    )
+    
+    # Fairy Queen (garden)
+    fairy = NPC(
+        id="fairy_queen",
+        name="Thornweaver",
+        description="A willowy figure of unearthly beauty, skin like pale bark, hair like black rose petals. Crowned in thorns, she sits beside the dry fountain.",
+        room_id="garden",
+        personality={
+            "traits": ["enchanting", "mysterious", "playful"],
+            "goals": "Recover her silver bell",
+            "mood": "sorrowful",
+        },
+        ai_model="phi3",
+    )
+    
+    # Skeleton Knight (crypt)
+    knight = NPC(
+        id="skeleton_knight",
+        name="Crypt Knight",
+        description="A towering skeleton in rusted plate armor. A shattered sword is clutched in its grip. The heraldry on its shield has long since worn away.",
+        room_id="crypt",
+        personality={
+            "traits": ["hostile", "eternal", "sentinel"],
+            "goals": "Guard the crypt forever",
+            "mood": "grim",
+        },
+        ai_model="phi3",
+    )
+    
+    # Wandering Spirit (entrance - spawns via events)
+    spirit = NPC(
+        id="wandering_spirit",
+        name="Wandering Spirit",
+        description="A translucent figure drifts through the air, looking lost and sorrowful.",
+        room_id="entrance",
+        personality={
+            "traits": ["ghostly", "peaceful", "trapped"],
+            "goals": "Find peace",
+            "mood": "sad",
+        },
+        ai_model="phi3",
+    )
+    
     world.add_npc(guard)
     world.add_npc(dragon)
+    world.add_npc(scholar)
+    world.add_npc(fairy)
+    world.add_npc(knight)
+    world.add_npc(spirit)
     
     # Save everything
     for room in world.rooms.values():
