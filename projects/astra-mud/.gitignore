@@ -1,20 +1,7 @@
-# Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[cod]
-*$py.class
-
-# Virtual environments
+*.pyc
 .venv/
-venv/
-ENV/
-
-# Data (keep schema, ignore runtime state)
-data/*.db
-data/*.db-journal
-
-# IDE
-.vscode/
-.idea/
-
-# OS
-.DS_Store
+data/world.db
+*.egg-info/
+dist/
+build/
